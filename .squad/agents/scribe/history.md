@@ -16,6 +16,7 @@ Agent Scribe initialized and ready for work.
 📌 Decision inbox consolidated into active decisions.md (4 entries merged)
 📌 Orchestration and session logs created on 2026-04-13T180001Z
 📌 Knigovishte fetcher decision consolidated (2026-04-13T180002Z)
+📌 Squad health check performed on 2026-04-16 (Coordinator direct); drift detected in template files
 
 ## Work Completed
 
@@ -29,6 +30,7 @@ Agent Scribe initialized and ready for work.
 - Created orchestration log documenting Ripley's deliverables
 - Created session log for project structure decisions
 - Created orchestration and session logs for Knigovishte fetcher work
+- Logged squad health check session (2026-04-16): detected template drift, GitHub wiring incomplete
 
 ## Learnings
 
