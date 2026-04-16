@@ -1,0 +1,15 @@
+Scribe: Consolidate Knigovishte fetcher deliverables
+
+- Merge ripley-knigovishte-fetcher decision into active decisions.md
+- Add orchestration log for Ripley's fetcher implementation slice
+- Add session log documenting fetcher architecture and scope
+- Update Ripley history with fetcher completion notes
+- Update Scribe history with consolidation work
+
+Deliverables included:
+- src/knigovishte_podcast/services/fetcher.py (urllib + HTMLParser)
+- tests/test_fetcher.py (comprehensive unit tests)
+- Updated README with fetcher documentation
+- Decision inbox entry ripley-knigovishte-fetcher.md
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

@@ -1,0 +1,22 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "Alien",
+      "assignment_id": "2026-04-13-initial-cast",
+      "used_at": "2026-04-13T17:28:16.452Z"
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "2026-04-13-initial-cast": {
+      "universe": "Alien",
+      "agents": {
+        "lead": "Ripley",
+        "backend-dev": "Bishop",
+        "language-ai-dev": "Ash",
+        "audio-dev": "Parker",
+        "tester": "Lambert"
+      },
+      "created_at": "2026-04-13T17:28:16.452Z"
+    }
+  }
+}
