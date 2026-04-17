@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "knigovishte-podcast"
+version = "0.1.0"
+description = "Local-first scaffold for turning Knigovishte articles into bilingual podcast episodes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "python-dotenv>=1.0",
+    "pyttsx3>=2.90",
+]
+
+[project.scripts]
+knigovishte-podcast = "knigovishte_podcast.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

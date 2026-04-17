@@ -1,0 +1,56 @@
+# Knigovishte Podcast Builder
+
+Starter scaffold for a local-first app that will:
+
+1. fetch a Bulgarian article from `https://www.knigovishte.bg/`
+2. translate it to English
+3. generate a podcast-style audio file
+
+## Why this stack
+
+- **Python 3.11+**
+- **stdlib-first scaffold**
+- **CLI-oriented structure**
+
+This keeps the first step simple on Windows, fits scraping/translation/TTS well, and leaves cheap extension points for site parsing, translation providers, and audio generation later.
+
+## Current shape
+
+- `src\knigovishte_podcast\` — application package
+- `src\knigovishte_podcast\services\` — pipeline boundaries
+- `tests\` — unit tests for deterministic logic
+- `data\articles\` — fetched source material
+- `data\scripts\` — generated podcast scripts
+- `data\audio\` — generated audio files
+
+Implemented today:
+
+- `KnigovishteArticleFetcher` downloads a public Knigovishte/Vijte article page, extracts the Bulgarian title, and splits article text into Bulgarian sentences.
+- `PodcastScriptBuilder` formats the bilingual podcast script.
+
+Translation and TTS remain scaffolded as explicit service boundaries.
+
+## Planned flow
+
+1. `KnigovishteArticleFetcher` extracts title and Bulgarian sentences
+2. `ArticleTranslator` produces English title and sentence pairs
+3. `PodcastScriptBuilder` formats the bilingual script
+4. `PodcastAudioGenerator` renders audio from the script
+
+## Commands to use once Python is available
+
+```powershell
+python main.py plan --url "https://www.knigovishte.bg/"
+python main.py fetch --url "https://www.knigovishte.bg/book/1532-kolko-tezhi-edna-leka-muha"
+python -m unittest discover -s tests
+```
+
+## Fetcher limitations in this first slice
+
+- Supports public article pages that expose the current `kmedia-article-title` and `kmedia-article-content` HTML structure.
+- Ignores quiz/comment UI and image captions; it focuses on title plus article body text.
+- Sentence splitting is heuristic (`.`, `!`, `?`, `…`, and line breaks), so edge cases in Bulgarian abbreviations are not handled yet.
+
+## Next implementation step
+
+Plug translation and TTS providers into the existing pipeline once real fetched articles are flowing end to end.
