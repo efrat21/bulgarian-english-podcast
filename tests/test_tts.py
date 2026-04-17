@@ -114,6 +114,28 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "Requested voice not available"):
                         generator.generate("Hello world", "episode-slug")
 
+    def test_generate_raises_when_voice_name_is_blank(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            class DummyPaths:
+                root = project_root
+                audio = project_root / "audio"
+
+                def ensure(self) -> None:
+                    self.audio.mkdir(parents=True, exist_ok=True)
+
+            mock_engine = Mock()
+
+            with patch(
+                "knigovishte_podcast.services.tts.ProjectPaths.from_root",
+                return_value=DummyPaths(),
+            ):
+                with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
+                    generator = Pyttsx3PodcastAudioGenerator(voice_name="   ")
+                    with self.assertRaisesRegex(ValueError, "voice_name must not be blank"):
+                        generator.generate("Hello world", "episode-slug")
+
     def test_generate_raises_when_audio_file_is_not_created(self) -> None:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)

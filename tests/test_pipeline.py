@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from knigovishte_podcast.cli import main
 from knigovishte_podcast.config import ProjectPaths, episode_slug_from_url
 from knigovishte_podcast.models import Article, PodcastPlan, Translation
-from knigovishte_podcast.pipeline import ArticleToPodcastPipeline
+from knigovishte_podcast.pipeline import ArticleToPodcastPipeline, pipeline as build_pipeline
 
 
 class StubFetcher:
@@ -63,6 +63,16 @@ class StubAudioGenerator:
         audio_path = self.audio_root / f"{episode_slug}.wav"
         audio_path.write_bytes(b"audio")
         return audio_path
+
+
+class FetchOnlyFetcher:
+    def __init__(self, article: Article) -> None:
+        self.article = article
+        self.calls: list[str] = []
+
+    def fetch(self, url: str) -> Article:
+        self.calls.append(url)
+        return self.article
 
 
 class ArticleToPodcastPipelineTests(unittest.TestCase):
@@ -134,6 +144,50 @@ class ArticleToPodcastPipelineTests(unittest.TestCase):
 
         self.assertEqual(fetcher.fetch_html_calls, 1)
         self.assertEqual(fetcher.parse_html_calls, 2)
+
+    def test_run_supports_fetch_only_fetchers_without_html_artifact(self) -> None:
+        fetcher = FetchOnlyFetcher(self.article)
+        audio_generator = StubAudioGenerator(self.paths.audio)
+        sut = ArticleToPodcastPipeline(
+            fetcher=fetcher,
+            translator=StubTranslator(self.translation),
+            script_builder=StubScriptBuilder(self.script_text),
+            audio_generator=audio_generator,
+            paths=self.paths,
+        )
+
+        plan = sut.run(self.article.source_url)
+
+        self.assertEqual(fetcher.calls, [self.article.source_url])
+        self.assertIsNone(plan.article_html_path)
+        self.assertEqual(audio_generator.calls, [(self.script_text, episode_slug_from_url(self.article.source_url))])
+
+
+class PipelineFactoryTests(unittest.TestCase):
+    def test_pipeline_factory_uses_explicit_config_and_default_services(self) -> None:
+        paths = ProjectPaths.from_root(Path(__file__).resolve().parent / "_artifacts" / self._testMethodName)
+        translation_config = Mock()
+        fetcher = Mock()
+        translator = Mock()
+        script_builder = Mock()
+        audio_generator = Mock()
+
+        with patch("knigovishte_podcast.pipeline.KnigovishteArticleFetcher", return_value=fetcher):
+            with patch("knigovishte_podcast.pipeline.LangblyTranslator", return_value=translator) as translator_cls:
+                with patch("knigovishte_podcast.pipeline.PodcastScriptBuilder", return_value=script_builder):
+                    with patch(
+                        "knigovishte_podcast.pipeline.Pyttsx3PodcastAudioGenerator",
+                        return_value=audio_generator,
+                    ):
+                        sut = build_pipeline(paths=paths, translation_config=translation_config)
+
+        translator_cls.assert_called_once_with(translation_config)
+        self.assertIs(sut.fetcher, fetcher)
+        self.assertIs(sut.translator, translator)
+        self.assertIs(sut.script_builder, script_builder)
+        self.assertIs(sut.audio_generator, audio_generator)
+        self.assertEqual(sut.paths, paths)
+        self.assertTrue(sut.use_cached_html)
 
 
 class CliRunCommandTests(unittest.TestCase):

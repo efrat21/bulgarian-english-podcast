@@ -77,6 +77,24 @@ class CliCommandTests(unittest.TestCase):
         if self.workdir.exists():
             shutil.rmtree(self.workdir)
 
+    def test_plan_command_reports_expected_paths(self) -> None:
+        stdout = io.StringIO()
+        slug = episode_slug_from_url(self.article.source_url)
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with redirect_stdout(stdout):
+                exit_code = main(["plan", "--url", self.article.source_url])
+
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertIn(f"Episode slug: {slug}", output)
+        self.assertIn(f"Article cache: {self.paths.articles / f'{slug}.html'}", output)
+        self.assertIn(
+            f"Translation output: {self.paths.scripts / f'{slug}.translation.txt'}",
+            output,
+        )
+        self.assertIn(f"Audio output: {self.paths.audio / f'{slug}.wav'}", output)
+
     def test_fetch_command_reuses_cached_html_and_reports_cache(self) -> None:
         slug = episode_slug_from_url(self.article.source_url)
         cache_path = self.paths.articles / f"{slug}.html"
@@ -171,6 +189,32 @@ class CliCommandTests(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("HTML source: network", output)
         self.assertIn(f"Audio output: {expected_audio_path}", output)
+
+    def test_fetch_command_reports_failure_and_returns_one(self) -> None:
+        stdout = io.StringIO()
+        fetcher = Mock()
+        fetcher.fetch_html.side_effect = ValueError("bad url")
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.KnigovishteArticleFetcher", return_value=fetcher):
+                with redirect_stdout(stdout):
+                    exit_code = main(["fetch", "--url", self.article.source_url, "--refresh"])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Fetch failed: bad url", stdout.getvalue())
+
+    def test_run_command_reports_failure_and_returns_one(self) -> None:
+        stdout = io.StringIO()
+        mock_pipeline = Mock()
+        mock_pipeline.run.side_effect = RuntimeError("translator offline")
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.build_pipeline", return_value=mock_pipeline):
+                with redirect_stdout(stdout):
+                    exit_code = main(["run", "--url", self.article.source_url])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("Pipeline failed: translator offline", stdout.getvalue())
 
 
 if __name__ == "__main__":
