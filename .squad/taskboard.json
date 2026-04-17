@@ -59,10 +59,10 @@
       "title": "Podcast audio generation via pyttsx3",
       "description": "Implement Pyttsx3PodcastAudioGenerator to consume bilingual script and produce .wav/.mp3 output. Handle voice selection, rate, volume settings. Save to data/audio/ folder.",
       "owner": "Parker",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": ["script-builder"],
-      "notes": "Test suite exists (test_tts.py). Depends on script builder stabilizing script format."
+      "notes": "Completed. Pyttsx3PodcastAudioGenerator writes local .wav files to data/audio/, applies optional rate/volume settings, raises on unknown voice selection, removes stale output before generation, and fails loudly if no fresh audio file is produced."
     },
     {
       "id": "pipeline-integration",

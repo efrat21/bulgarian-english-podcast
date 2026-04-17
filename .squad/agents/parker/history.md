@@ -8,3 +8,6 @@
 ## Learnings
 
 - Audio work will likely focus on TTS selection, output formats, and podcast file generation.
+- `my-project\\src\\knigovishte_podcast\\services\\tts.py` is the local pyttsx3 boundary; it now standardizes output on `.wav`, clears stale files before synthesis, and raises if a requested voice is unavailable.
+- `my-project\\tests\\test_tts.py` covers the TTS contract: empty-input validation, voice selection behavior, and proof that a fresh audio file was actually created.
+- `my-project\\src\\knigovishte_podcast\\cli.py` plan output must match the real TTS artifact path so downstream pipeline work can trust `data\\audio\\*.wav`.
