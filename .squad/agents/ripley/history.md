@@ -23,6 +23,9 @@
 - Taskboard workflow: when a task completes, update its `status` field from "pending" to "done" and commit with `git add .squad/taskboard.json && git commit -m 'Update task board: <task-id> complete'`.
 - Audited actual imports across all Python files in `my-project/` and confirmed `requirements.txt` reflects reality: `requests>=2.31`, `python-dotenv>=1.0`, `pyttsx3>=2.90`. All other imports are stdlib or internal modules.
 - Task `requirements-txt-audit` assigned to Bishop with high priority to ensure ongoing synchronization between code imports and declared dependencies.
+- `my-project\README.md` now needs to be treated as the current developer guide for the implemented CLI, not as scaffold-era prose.
+- The verified nested-repo test command is `python -m unittest discover -s tests -v` from `my-project\`.
+- Root repo hygiene depends on ignoring the nested `my-project\` git repository so Squad coordination files stay clean without disturbing app-repo history.
 
 ## Recent Session (2026-04-13T180001Z)
 

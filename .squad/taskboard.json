@@ -109,10 +109,10 @@
       "title": "Project README and developer guide",
       "description": "Write README.md covering: what the app does, how to install and run, API overview, architecture diagram, known limitations, future work.",
       "owner": "Ripley",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["pipeline-integration"],
-      "notes": "Keep concise and developer-focused. Assume readers are familiar with Squad framework."
+      "notes": "Completed. README now reflects the implemented CLI, setup requirements, artifact paths, verified test command, architecture boundaries, and current limitations. Root repo also now ignores the nested my-project git repo to keep squad coordination state clean."
     },
     {
       "id": "deployment-strategy",

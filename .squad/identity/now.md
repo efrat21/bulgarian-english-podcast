@@ -1,9 +1,11 @@
 ---
-updated_at: 2026-04-16T08:13:21.813Z
-focus_area: Squad health check
-active_issues: []
+updated_at: 2026-04-17T16:20:00Z
+focus_area: Delivery readiness
+active_issues:
+  - ci-cd-setup
+  - deployment-strategy
 ---
 
 # What We're Focused On
 
-Checking the installed Squad state for drift against the live 0.9.1 coordinator contract and repository wiring.
+The app is implemented and documented enough for developer handoff. The next live questions are automation (`ci-cd-setup`) and packaging/deployment shape (`deployment-strategy`), not another Squad health check.
