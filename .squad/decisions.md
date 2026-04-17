@@ -97,6 +97,19 @@ Refined `.github/copilot-instructions.md` to reflect what is true today, not fut
 
 **Outcome:** Agents can read instructions in 90 seconds without wading through conditional future sections. Clear, actionable guidance for current state.
 
+### 8. User Directive: Task Board & Requirements Tracking (2026-04-17T12:30:04Z)
+**By:** efratmiyara-work (via Copilot)
+
+User directive captured for team memory:
+- Keep a tracked task file (`.squad/taskboard.json`) as the source of truth for project work
+- Update task statuses whenever work finishes
+- Commit those updates to git
+- Include explicit task to update `my-project\requirements.txt` with all imports used by the application
+
+**Rationale:** User request — ensure all work is visible, tracked, and committed to version control. Requirements file must stay synchronized with actual code imports.
+
+**Impact:** Ripley to establish taskboard as canonical tracking. All agents update status on completion. Bishop to audit and maintain requirements.txt alignment.
+
 ## Governance
 
 - All meaningful changes require team consensus
