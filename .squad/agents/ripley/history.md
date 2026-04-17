@@ -28,6 +28,9 @@
 - Root repo hygiene depends on ignoring the nested `my-project\` git repository so Squad coordination files stay clean without disturbing app-repo history.
 - CI quality gates now live in `.github\workflows\python-ci.yml` and deliberately scope work to `my-project\` so root Squad automation changes do not trigger app validation unnecessarily.
 - The app's current distribution shape is a plain Python package built from `my-project\pyproject.toml`; `pip install .` / wheel install is justified now, while Docker or hosted deployment is intentionally deferred because the product is still a local CLI.
+- `my-project\pyproject.toml` now owns the local developer toolchain through the `dev` extra plus Ruff and mypy configuration, keeping validation settings inside the nested app repo instead of the Squad root.
+- The current app verification flow from `my-project\` is `python -m pip install -e ".[dev]"`, `python -m ruff check main.py src tests`, `python -m mypy main.py src`, `python -m unittest discover -s tests -v`, and `python -m build`.
+- `my-project\README.md` is the live operator/developer guide for the CLI and now documents install, command usage, artifact layout, quality checks, and packaging expectations rather than scaffold-era planning notes.
 
 ## Recent Session (2026-04-13T180001Z)
 
