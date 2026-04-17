@@ -113,3 +113,12 @@
 - Issue #6 now resolved: Bulgarian voice successfully renders in bilingual podcasts
 - CLI now exposes `--en-voice` / `--bg-voice` flags on generate-audio and run commands
 - Decision documented for Scribe to merge into active decisions
+
+## Recent Session (2026-04-17T174947Z)
+
+📌 **Stale Draft Closure Verification**
+- Confirmed PR #4 ("General cleanup") closure as valid and necessary; superseded by later master commits
+- Confirmed PR #5 ("Episode 1 podcast data") closure as valid; artifact staging not required for pipeline
+- Both PRs already closed with explanatory notes; no further action needed
+- Board state verified clear; team ready for next assignment cycle
+
