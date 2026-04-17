@@ -31,6 +31,7 @@
 - `my-project\pyproject.toml` now owns the local developer toolchain through the `dev` extra plus Ruff and mypy configuration, keeping validation settings inside the nested app repo instead of the Squad root.
 - The current app verification flow from `my-project\` is `python -m pip install -e ".[dev]"`, `python -m ruff check main.py src tests`, `python -m mypy main.py src`, `python -m unittest discover -s tests -v`, and `python -m build`.
 - `my-project\README.md` is the live operator/developer guide for the CLI and now documents install, command usage, artifact layout, quality checks, and packaging expectations rather than scaffold-era planning notes.
+- The root Squad repo currently has no upstream configured for local `master`; after fetching on 2026-04-17 it was found to diverge from `origin/master` (local ahead 16, behind 7), so straight push cleanup can fail with a non-fast-forward rejection until remote changes are integrated.
 
 ## Recent Session (2026-04-13T180001Z)
 
@@ -85,3 +86,10 @@
 - Created 5 team decisions: Langbly batch shape (Ash), pipeline artifact caching (Bishop), WAV output standard (Parker), nested repo hygiene (Ripley), CI/packaging shape (Ripley)
 - Decisions merged into active decisions.md by Scribe
 - Cross-agent context propagated to Bishop, Ash, Parker histories
+
+## Recent Session (2026-04-17T163000Z)
+
+📌 **Plugin Marketplace Source Added**
+- Created `.squad/plugins/marketplaces.json` with `tamirdresher/squad-skills` registered as a marketplace source
+- Marketplace structure established per plugin-marketplace.md template
+- Source now available for browsing and installing skills into agent roles during team member setup
