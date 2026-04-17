@@ -168,6 +168,30 @@ Keep the workspace root and the application repo intentionally separate:
 
 **Implications:** Dev tooling lives as a `dev` extra in `my-project/pyproject.toml`. `mypy` is scoped to real application entry points (`main.py`, `src/`) and explicitly tolerates the untyped `pyttsx3` dependency. Linting targets `main.py`, `src`, and `tests`, not ad hoc manual scripts outside the supported developer workflow.
 
+### 14. Ripley Decision: TTS Voice Fix — Architecture Divergence (2026-04-17T20:50:00Z)
+**Owner:** Ripley
+
+Parker's local fix for issue #6 (commit `14d429b`, "Fix bilingual TTS voice routing") uses a **segment-directory caching architecture** for bilingual audio generation.
+
+The existing draft PR #7 (`copilot/fix-bulgarian-voice-audio` on GitHub) implements the same feature using a **stateless temp-WAV concatenation approach** with explicit CLI argument handling.
+
+**Both are functionally correct, but architecturally incompatible:**
+- Local: Persistent `_segments/` directories + segment caching + Unicode-based language detection
+- PR: Inline script splitting + temp file cleanup + prefix-based language detection
+
+**Decision:** PR #7 is the canonical design for this fix. It is:
+- Already drafted and visible on GitHub
+- Simpler (no directory magic, uses stdlib `wave` module)
+- Tested with comprehensive bilingual test cases
+- Ready to merge and deploy
+
+**Action for Ralph:**
+1. Merge PR #7 directly to `master` on GitHub
+2. Pull the merged code into `my-project/` locally
+3. Parker can then decide: keep local work for reference, or discard and align with the merged version
+
+**Why:** Avoids conflicting implementations in history. Publishes the cleaner, simpler design. Team consensus already visible in the PR review threads.
+
 ## Governance
 
 - All meaningful changes require team consensus
