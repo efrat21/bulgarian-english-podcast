@@ -69,10 +69,10 @@
       "title": "End-to-end pipeline orchestration",
       "description": "Implement PodcastPlan and pipeline() function to wire together fetcher → translator → script builder → TTS. Handle error cases and caching. Expose via CLI.",
       "owner": "Bishop",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": ["fetcher-impl", "translator-impl", "script-builder", "tts-impl"],
-      "notes": "Skeleton exists in pipeline.py. All component modules must be complete first."
+      "notes": "Completed. pipeline.py now exposes a default pipeline() factory, caches fetched HTML, writes generated scripts, returns artifact paths in PodcastPlan, and the CLI exposes a scoped run command for full orchestration."
     },
     {
       "id": "cli-main-entry",
