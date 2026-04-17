@@ -192,6 +192,39 @@ The existing draft PR #7 (`copilot/fix-bulgarian-voice-audio` on GitHub) impleme
 
 **Why:** Avoids conflicting implementations in history. Publishes the cleaner, simpler design. Team consensus already visible in the PR review threads.
 
+### 15. Ripley Blocker: Squad Repository Remote Conflict (2026-04-17T20:55:00Z)
+**Owner:** Ripley  
+**Status:** Blocker — prevents push of squad decisions
+
+The root repository (hosting `.squad/` coordination) is configured with:
+```
+origin = https://github.com/efrat21/bulgarian-english-podcast
+```
+
+This is the **application repository**, not the squad coordination repository.
+
+**Problem:** Squad decisions cannot be pushed because:
+1. Root repo (`.squad/decisions.md`) is now ahead of `origin/master`
+2. But `origin/master` is the app repo, which has unrelated commits
+3. A non-fast-forward push would fail; a force push would clobber the app repo
+
+**Current state:**
+- Local root: commits `7d31cd8` (Ripley decision) + `8cf3ca3` + `f5efa22` + `13fe63f` + more
+- Remote `origin/master`: `db023a1` (app repo)
+- Divergence: root is 16+ commits ahead; remote is 7+ commits ahead of root's base
+
+**Why this happened:**
+- Decision #6 set `origin` to point to the app repo
+- But root repo (squad coordination) and app repo (`my-project/`) are separate git repos
+- Squad state should not be mixed into app repo history
+
+**Recommendation:**
+1. **Separate concerns:** Create a dedicated Squad coordination repo on GitHub (or local tracking branch)
+2. **OR integrate:** Merge squad state into app repo master once app is stable
+3. **OR manual sync:** Ralph pulls squad decisions from the root directory locally, without remote push
+
+**For now:** Squad decisions are **locally safe** (committed to disk at `.squad/decisions.md`). They just cannot be pushed to remote until this root/app separation is clarified.
+
 ## Governance
 
 - All meaningful changes require team consensus
