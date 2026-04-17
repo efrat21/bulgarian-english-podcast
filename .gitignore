@@ -25,3 +25,7 @@ data/rss/*
 .squad/sessions/
 # Squad: SubSquad activation file (local to this machine)
 .squad-workstream
+.env
+
+# Nested application repo is managed independently.
+my-project/
