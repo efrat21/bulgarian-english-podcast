@@ -1,0 +1,177 @@
+from __future__ import annotations
+
+import io
+import shutil
+import sys
+import unittest
+from contextlib import redirect_stdout
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from knigovishte_podcast.cli import main
+from knigovishte_podcast.config import ProjectPaths, episode_slug_from_url
+from knigovishte_podcast.models import Article, Translation
+
+
+class StubFetcher:
+    def __init__(self, article: Article, html: str) -> None:
+        self.article = article
+        self.html = html
+        self.fetch_html_calls = 0
+        self.parse_html_calls = 0
+
+    def fetch_html(self, url: str) -> str:
+        self.fetch_html_calls += 1
+        return self.html
+
+    def parse_html(self, url: str, html: str) -> Article:
+        self.parse_html_calls += 1
+        return self.article
+
+
+class StubTranslator:
+    def __init__(self, translation: Translation) -> None:
+        self.translation = translation
+        self.calls: list[Article] = []
+
+    def translate(self, article: Article) -> Translation:
+        self.calls.append(article)
+        return self.translation
+
+
+class StubAudioGenerator:
+    def __init__(self, audio_root: Path) -> None:
+        self.audio_root = audio_root
+        self.calls: list[tuple[str, str]] = []
+
+    def generate(self, script_text: str, episode_slug: str) -> Path:
+        self.calls.append((script_text, episode_slug))
+        self.audio_root.mkdir(parents=True, exist_ok=True)
+        audio_path = self.audio_root / f"{episode_slug}.wav"
+        audio_path.write_bytes(b"audio")
+        return audio_path
+
+
+class CliCommandTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.workdir = Path(__file__).resolve().parent / "_artifacts" / self._testMethodName
+        if self.workdir.exists():
+            shutil.rmtree(self.workdir)
+        self.paths = ProjectPaths.from_root(self.workdir)
+        self.paths.ensure()
+
+        self.article = Article(
+            source_url="https://www.knigovishte.bg/vijte/42-test",
+            title_bg="Българско заглавие",
+            sentences_bg=("Едно изречение.", "Още едно изречение."),
+        )
+        self.translation = Translation(
+            title_en="English Title",
+            sentences_en=("One sentence.", "Another sentence."),
+        )
+        self.html = "<html>cached article</html>"
+
+    def tearDown(self) -> None:
+        if self.workdir.exists():
+            shutil.rmtree(self.workdir)
+
+    def test_fetch_command_reuses_cached_html_and_reports_cache(self) -> None:
+        slug = episode_slug_from_url(self.article.source_url)
+        cache_path = self.paths.articles / f"{slug}.html"
+        cache_path.write_text(self.html, encoding="utf-8")
+        fetcher = StubFetcher(self.article, "<html>fresh article</html>")
+        stdout = io.StringIO()
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.KnigovishteArticleFetcher", return_value=fetcher):
+                with redirect_stdout(stdout):
+                    exit_code = main(["fetch", "--url", self.article.source_url])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(fetcher.fetch_html_calls, 0)
+        self.assertEqual(fetcher.parse_html_calls, 1)
+        output = stdout.getvalue()
+        self.assertIn("HTML source: cache", output)
+        self.assertIn(f"Cached HTML: {cache_path}", output)
+
+    def test_translate_command_writes_translation_artifact(self) -> None:
+        fetcher = StubFetcher(self.article, self.html)
+        translator = StubTranslator(self.translation)
+        stdout = io.StringIO()
+        translation_path = self.paths.scripts / f"{episode_slug_from_url(self.article.source_url)}.translation.txt"
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.KnigovishteArticleFetcher", return_value=fetcher):
+                with patch("knigovishte_podcast.cli.TranslationConfig.from_env", return_value=Mock()):
+                    with patch("knigovishte_podcast.cli.LangblyTranslator", return_value=translator):
+                        with redirect_stdout(stdout):
+                            exit_code = main(["translate", "--url", self.article.source_url])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(translator.calls, [self.article])
+        self.assertTrue(translation_path.exists())
+        artifact_text = translation_path.read_text(encoding="utf-8")
+        self.assertIn("English title: English Title", artifact_text)
+        self.assertIn("1. EN: One sentence.", artifact_text)
+        output = stdout.getvalue()
+        self.assertIn(f"Translation output: {translation_path}", output)
+        self.assertIn("Translated title: English Title", output)
+
+    def test_build_script_command_writes_script_output(self) -> None:
+        fetcher = StubFetcher(self.article, self.html)
+        translator = StubTranslator(self.translation)
+        stdout = io.StringIO()
+        script_path = self.paths.scripts / f"{episode_slug_from_url(self.article.source_url)}.txt"
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.KnigovishteArticleFetcher", return_value=fetcher):
+                with patch("knigovishte_podcast.cli.TranslationConfig.from_env", return_value=Mock()):
+                    with patch("knigovishte_podcast.cli.LangblyTranslator", return_value=translator):
+                        with redirect_stdout(stdout):
+                            exit_code = main(["build-script", "--url", self.article.source_url])
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(script_path.exists())
+        script_text = script_path.read_text(encoding="utf-8")
+        self.assertIn("English title: English Title", script_text)
+        self.assertIn("Bulgarian: Едно изречение.", script_text)
+        output = stdout.getvalue()
+        self.assertIn(f"Script output: {script_path}", output)
+
+    def test_generate_audio_command_writes_script_and_audio_output(self) -> None:
+        fetcher = StubFetcher(self.article, self.html)
+        translator = StubTranslator(self.translation)
+        audio_generator = StubAudioGenerator(self.paths.audio)
+        stdout = io.StringIO()
+        slug = episode_slug_from_url(self.article.source_url)
+        expected_audio_path = self.paths.audio / f"{slug}.wav"
+        expected_script_path = self.paths.scripts / f"{slug}.txt"
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.KnigovishteArticleFetcher", return_value=fetcher):
+                with patch("knigovishte_podcast.cli.TranslationConfig.from_env", return_value=Mock()):
+                    with patch("knigovishte_podcast.cli.LangblyTranslator", return_value=translator):
+                        with patch(
+                            "knigovishte_podcast.cli.Pyttsx3PodcastAudioGenerator",
+                            return_value=audio_generator,
+                        ):
+                            with redirect_stdout(stdout):
+                                exit_code = main(["generate-audio", "--url", self.article.source_url, "--refresh"])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(fetcher.fetch_html_calls, 1)
+        self.assertTrue(expected_script_path.exists())
+        self.assertTrue(expected_audio_path.exists())
+        self.assertEqual(
+            audio_generator.calls,
+            [(expected_script_path.read_text(encoding="utf-8"), slug)],
+        )
+        output = stdout.getvalue()
+        self.assertIn("HTML source: network", output)
+        self.assertIn(f"Audio output: {expected_audio_path}", output)
+
+
+if __name__ == "__main__":
+    unittest.main()

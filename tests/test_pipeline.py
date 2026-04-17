@@ -171,11 +171,12 @@ class CliRunCommandTests(unittest.TestCase):
 
         stdout = io.StringIO()
         with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
-            with patch("knigovishte_podcast.cli.build_pipeline", return_value=mock_pipeline):
+            with patch("knigovishte_podcast.cli.build_pipeline", return_value=mock_pipeline) as build_pipeline_mock:
                 with redirect_stdout(stdout):
                     exit_code = main(["run", "--url", article.source_url])
 
         self.assertEqual(exit_code, 0)
+        build_pipeline_mock.assert_called_once_with(paths=self.paths, use_cached_html=True)
         mock_pipeline.run.assert_called_once_with(article.source_url)
         output = stdout.getvalue()
         self.assertIn("Fetched title: Българско заглавие", output)

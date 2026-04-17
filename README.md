@@ -41,11 +41,22 @@ Implemented today:
 ## Commands to use once Python is available
 
 ```powershell
-python main.py plan --url "https://www.knigovishte.bg/"
+python main.py plan --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py fetch --url "https://www.knigovishte.bg/book/1532-kolko-tezhi-edna-leka-muha"
+python main.py translate --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
+python main.py build-script --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
+python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
+python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --refresh
 python -m unittest discover -s tests
 ```
+
+All commands use local-first defaults:
+
+- article HTML cache: `data\articles\{slug}.html`
+- translation text artifact: `data\scripts\{slug}.translation.txt`
+- podcast script: `data\scripts\{slug}.txt`
+- audio output: `data\audio\{slug}.wav`
 
 ## Fetcher limitations in this first slice
 
@@ -55,4 +66,4 @@ python -m unittest discover -s tests
 
 ## Current limitation
 
-The `run` command still depends on a valid `LANGBLY_API_KEY` in `my-project\.env` or the environment.
+The `translate`, `build-script`, `generate-audio`, and `run` commands depend on a valid `LANGBLY_API_KEY` in `my-project\.env` or the environment.
