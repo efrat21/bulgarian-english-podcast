@@ -110,6 +110,64 @@ User directive captured for team memory:
 
 **Impact:** Ripley to establish taskboard as canonical tracking. All agents update status on completion. Bishop to audit and maintain requirements.txt alignment.
 
+### 9. Ash Decision: Langbly Batch Request Shape (2026-04-17T16:07:23Z)
+**Owner:** Ash
+
+Keep the Langbly translator boundary explicit and sentence-safe:
+- Send title plus article sentences as one ordered batch
+- Include the API key in the request payload for the current Langbly integration
+- Reject responses whose translation count does not match the submitted batch
+
+**Rationale:** This keeps title/sentence alignment inspectable and prevents silent ordering drift from malformed provider responses.
+
+**Affected paths:** `my-project\src\knigovishte_podcast\services\translator.py`, `my-project\tests\test_translator.py`
+
+### 10. Bishop Decision: Pipeline Owns Artifact Persistence (2026-04-17T16:07:23Z)
+**Owner:** Bishop
+
+Keep artifact persistence inside the pipeline layer:
+- The default `pipeline()` factory assembles the concrete fetcher, translator, script builder, and audio generator
+- `ArticleToPodcastPipeline.run()` caches fetched HTML under `my-project\data\articles\`
+- The pipeline writes the generated script under `my-project\data\scripts\` before invoking TTS
+- The CLI stays thin and only reports the resulting artifact paths
+
+**Rationale:** Keeps the orchestration understandable from the edges inward. Avoids duplicating fetch/cache/script-writing logic across CLI commands. Gives future callers one stable backend interface.
+
+**Affected paths:** `my-project\src\knigovishte_podcast\pipeline.py`, `my-project\src\knigovishte_podcast\models.py`, `my-project\src\knigovishte_podcast\cli.py`
+
+### 11. Parker Decision: pyttsx3 Output Is WAV-First (2026-04-17T16:07:23Z)
+**Owner:** Parker
+
+Standardize the local audio artifact on `.wav` output for the pyttsx3-backed generator and make planning/output messaging match that actual file path.
+
+**Rationale:** The implementation already generates `.wav` files reliably with pyttsx3. Claiming `.mp3` in planning output created a mismatch between reported and real artifacts. Audio generation should only report success when a fresh file exists at the expected path.
+
+**Impact:** TTS output under `my-project\data\audio\` is currently `*.wav`. Voice selection now fails explicitly when the requested voice is unavailable. Future MP3 support should be a separate enhancement with an explicit conversion step or different backend.
+
+### 12. Ripley Decision: Nested Repository Hygiene (2026-04-17T16:07:23Z)
+**Owner:** Ripley
+
+Keep the workspace root and the application repo intentionally separate:
+- The root repo owns `.squad\` coordination state
+- `my-project\` remains its own git repository
+- The root `.gitignore` must ignore `my-project\` so the coordination repo stays clean
+
+**Rationale:** The current workspace uses a nested application repository. Without an explicit ignore, root-level git status shows `my-project\` as repo dirt even when the application repo is healthy. Ignoring the nested repo preserves the separation we already rely on and avoids accidental cross-repo staging.
+
+**Impact:** Ripley and Scribe can keep the root repo focused on Squad state and decisions. App changes continue to be managed from `my-project\`. Future cleanup work should treat nested-repo noise as a repo-boundary problem first, not as a deletion target.
+
+### 13. Ripley Decision: Python CI and Packaging Shape (2026-04-17T16:07:23Z)
+**Owner:** Ripley
+
+- Add a single GitHub Actions workflow at `.github/workflows/python-ci.yml`
+- Run it on pushes and pull requests that touch `my-project/` or the workflow itself
+- Validate four things only: lint (`ruff`), type-check (`mypy`), unit tests (`unittest`), and package build (`python -m build`)
+- Treat the app as a standard Python package distributed via wheel/sdist for now; do not add Docker or hosted deployment infrastructure
+
+**Rationale:** The stack is now concrete enough: the project already has `pyproject.toml`, a working unittest suite, and an installable CLI entry point. That makes package-build validation and lightweight static checks justified, while anything heavier would be invented infrastructure for a local CLI.
+
+**Implications:** Dev tooling lives as a `dev` extra in `my-project/pyproject.toml`. `mypy` is scoped to real application entry points (`main.py`, `src/`) and explicitly tolerates the untyped `pyttsx3` dependency. Linting targets `main.py`, `src`, and `tests`, not ad hoc manual scripts outside the supported developer workflow.
+
 ## Governance
 
 - All meaningful changes require team consensus

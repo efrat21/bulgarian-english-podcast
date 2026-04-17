@@ -99,10 +99,10 @@
       "title": "Add build/test/lint automation",
       "description": "Set up pytest runner, linting (ruff/flake8), type checking (mypy) in automated CI. Add GitHub Actions workflow to run on push.",
       "owner": "Ripley",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["test-coverage"],
-      "notes": "No build/test/lint tools exist yet per decision. Will add when stack is confirmed."
+      "notes": "Completed. Added Windows GitHub Actions workflow at .github/workflows/python-ci.yml to install runtime + dev extras, run ruff on main.py/src/tests, run mypy on main.py/src with a pyttsx3 override, execute unittest discovery, and build wheel/sdist."
     },
     {
       "id": "docs-readme",
@@ -119,10 +119,10 @@
       "title": "Deployment and packaging strategy",
       "description": "Decide how to package app for distribution: pip install, PyPI, Docker, or standalone script. Document installation and usage for end users.",
       "owner": "Ripley",
-      "status": "pending",
+      "status": "done",
       "priority": "low",
       "dependencies": ["pipeline-integration", "docs-readme"],
-      "notes": "Defer until pipeline is feature-complete. Will depend on Stack and deployment target."
+      "notes": "Completed. Chose the minimum solid packaging path: distribute as a normal Python package built from pyproject.toml (wheel/sdist, local pip install). Explicitly deferred Docker/hosted deployment because the current product is a local CLI, not a service."
     }
   ]
 }

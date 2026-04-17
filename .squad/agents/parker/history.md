@@ -11,3 +11,7 @@
 - `my-project\\src\\knigovishte_podcast\\services\\tts.py` is the local pyttsx3 boundary; it now standardizes output on `.wav`, clears stale files before synthesis, and raises if a requested voice is unavailable.
 - `my-project\\tests\\test_tts.py` covers the TTS contract: empty-input validation, voice selection behavior, and proof that a fresh audio file was actually created.
 - `my-project\\src\\knigovishte_podcast\\cli.py` plan output must match the real TTS artifact path so downstream pipeline work can trust `data\\audio\\*.wav`.
+
+## Team Updates
+
+📌 Team update (2026-04-17T16:07:23Z): pyttsx3 output is WAV-first — standardize audio artifact on .wav format, explicit voice validation with failure on unavailable voice, future MP3 support as separate enhancement. Decided by Ripley

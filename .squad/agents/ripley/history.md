@@ -26,6 +26,8 @@
 - `my-project\README.md` now needs to be treated as the current developer guide for the implemented CLI, not as scaffold-era prose.
 - The verified nested-repo test command is `python -m unittest discover -s tests -v` from `my-project\`.
 - Root repo hygiene depends on ignoring the nested `my-project\` git repository so Squad coordination files stay clean without disturbing app-repo history.
+- CI quality gates now live in `.github\workflows\python-ci.yml` and deliberately scope work to `my-project\` so root Squad automation changes do not trigger app validation unnecessarily.
+- The app's current distribution shape is a plain Python package built from `my-project\pyproject.toml`; `pip install .` / wheel install is justified now, while Docker or hosted deployment is intentionally deferred because the product is still a local CLI.
 
 ## Recent Session (2026-04-13T180001Z)
 
@@ -69,3 +71,14 @@
 - Dependencies explicitly encoded (e.g., pipeline waits for all four core modules)
 - Audited `my-project/requirements.txt` against actual imports; confirmed all non-stdlib dependencies are tracked
 - Added task `requirements-txt-audit` assigned to Bishop with high priority to ensure ongoing sync
+
+## Recent Session (2026-04-17T160723Z)
+
+📌 **CI/CD & Deployment Readiness Complete**
+- Created `.github/workflows/python-ci.yml` with four validation gates: lint (ruff), type-check (mypy), tests (unittest), build (python -m build)
+- Workflow scoped to `my-project/` to keep root Squad state separate from app validation
+- Decided deployment strategy: standard Python wheel/sdist distribution; Docker and hosted infra deferred
+- All validation gates passed: lint, type-check, tests, build
+- Created 5 team decisions: Langbly batch shape (Ash), pipeline artifact caching (Bishop), WAV output standard (Parker), nested repo hygiene (Ripley), CI/packaging shape (Ripley)
+- Decisions merged into active decisions.md by Scribe
+- Cross-agent context propagated to Bishop, Ash, Parker histories

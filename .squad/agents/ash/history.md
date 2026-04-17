@@ -15,3 +15,4 @@
 ## Team Updates
 
 📌 Langbly translator decision (2026-04-17): Use Langbly API as the backend provider for ArticleTranslator interface. User preference for translation implementation. — decided by User
+📌 Team update (2026-04-17T16:07:23Z): Langbly batch request shape — send title + sentences as one batch, include API key in payload, reject mismatched response counts. Decided by Ripley
