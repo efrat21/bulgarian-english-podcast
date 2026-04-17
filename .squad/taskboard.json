@@ -79,10 +79,10 @@
       "title": "CLI main entry point and commands",
       "description": "Flesh out cli.py with full command set: fetch, translate, build-script, generate-audio, run (full pipeline). Support URL input, caching, output paths.",
       "owner": "Bishop",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": ["pipeline-integration"],
-      "notes": "Skeleton exists. Fetch command partially implemented. Needs translate, build-script, generate-audio, run subcommands."
+      "notes": "Completed. CLI now exposes fetch, translate, build-script, generate-audio, and run with URL input, local HTML reuse via --refresh-aware caching, persisted translation/script/audio artifacts, and focused CLI coverage."
     },
     {
       "id": "test-coverage",
