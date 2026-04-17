@@ -170,14 +170,15 @@ def _normalize_knigovishte_url(url: str) -> str:
     if not candidate:
         raise ValueError("Knigovishte URL is required.")
     if candidate.startswith("/"):
-        candidate = urljoin("https://www.knigovishte.bg/vijte", candidate)
+        candidate = urljoin("https://www.knigovishte.bg", candidate)
     elif "://" not in candidate:
-        candidate = f"https://www.knigovishte.bg/vijte/{candidate.lstrip('/')}"
+        candidate = f"https://{candidate.lstrip('/')}"
 
     parsed = urlparse(candidate)
-    if parsed.netloc not in {"knigovishte.bg/vijte", "www.knigovishte.bg/vijte"}:
+    if parsed.netloc not in {"knigovishte.bg", "www.knigovishte.bg"}:
         raise ValueError("Only knigovishte.bg/vijte article URLs are supported.")
-    if not parsed.path or parsed.path == "/":
+    path_segments = [segment for segment in parsed.path.split("/") if segment]
+    if len(path_segments) < 2:
         raise ValueError("A specific Knigovishte article URL is required.")
     return candidate
 
@@ -186,7 +187,7 @@ def _canonical_source_url(requested_url: str, canonical_url: str) -> str:
     if not canonical_url:
         return requested_url
     parsed = urlparse(canonical_url)
-    if parsed.netloc not in {"knigovishte.bg/vijte", "www.knigovishte.bg/vijte"}:
+    if parsed.netloc not in {"knigovishte.bg", "www.knigovishte.bg"}:
         return requested_url
     return canonical_url
 

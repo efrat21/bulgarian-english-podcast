@@ -22,4 +22,6 @@ class PodcastPlan:
     article: Article
     translation: Translation
     script_text: str
+    script_path: Path
     audio_path: Path
+    article_html_path: Path | None = None

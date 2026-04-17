@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 
 from .config import ProjectPaths, TranslationConfig, episode_slug_from_url
+from .pipeline import pipeline as build_pipeline
 from .services.fetcher import KnigovishteArticleFetcher
 from .services.tts import AUDIO_FILE_EXTENSION
 from .services.translator import LangblyTranslator
@@ -32,6 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fetch and translate a Knigovishte article from Bulgarian to English.",
     )
     translate_parser.add_argument("--url", required=True, help="Knigovishte article URL.")
+
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run the full fetch → translate → script → audio pipeline for a source URL.",
+    )
+    run_parser.add_argument("--url", required=True, help="Knigovishte article URL.")
 
     return parser
 
@@ -101,6 +108,26 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Translated sentence count: {len(translation.sentences_en)}")
         if translation.sentences_en:
             print(f"First translated sentence: {translation.sentences_en[0]}")
+        return 0
+
+    if args.command == "run":
+        paths = ProjectPaths.from_root()
+        paths.ensure()
+
+        try:
+            plan = build_pipeline(paths=paths).run(args.url)
+        except Exception as exc:
+            print(f"Pipeline failed: {exc}")
+            return 1
+
+        print(f"Fetched title: {plan.article.title_bg}")
+        print(f"Translated title: {plan.translation.title_en}")
+        print(f"Article URL: {plan.article.source_url}")
+        print(f"Sentence count: {len(plan.article.sentences_bg)}")
+        if plan.article_html_path is not None:
+            print(f"Cached HTML: {plan.article_html_path}")
+        print(f"Script output: {plan.script_path}")
+        print(f"Audio output: {plan.audio_path}")
         return 0
 
     parser.error(f"Unsupported command: {args.command}")

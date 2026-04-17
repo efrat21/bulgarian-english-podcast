@@ -26,9 +26,10 @@ This keeps the first step simple on Windows, fits scraping/translation/TTS well,
 Implemented today:
 
 - `KnigovishteArticleFetcher` downloads a public Knigovishte/Vijte article page, extracts the Bulgarian title, and splits article text into Bulgarian sentences.
+- `LangblyTranslator` translates the title plus article sentences as one ordered batch.
 - `PodcastScriptBuilder` formats the bilingual podcast script.
-
-Translation and TTS remain scaffolded as explicit service boundaries.
+- `Pyttsx3PodcastAudioGenerator` renders the script to a local `.wav` file.
+- `ArticleToPodcastPipeline` caches fetched HTML, writes the generated script, and hands the script to TTS behind one stable interface.
 
 ## Planned flow
 
@@ -42,6 +43,7 @@ Translation and TTS remain scaffolded as explicit service boundaries.
 ```powershell
 python main.py plan --url "https://www.knigovishte.bg/"
 python main.py fetch --url "https://www.knigovishte.bg/book/1532-kolko-tezhi-edna-leka-muha"
+python main.py run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python -m unittest discover -s tests
 ```
 
@@ -51,6 +53,6 @@ python -m unittest discover -s tests
 - Ignores quiz/comment UI and image captions; it focuses on title plus article body text.
 - Sentence splitting is heuristic (`.`, `!`, `?`, `…`, and line breaks), so edge cases in Bulgarian abbreviations are not handled yet.
 
-## Next implementation step
+## Current limitation
 
-Plug translation and TTS providers into the existing pipeline once real fetched articles are flowing end to end.
+The `run` command still depends on a valid `LANGBLY_API_KEY` in `my-project\.env` or the environment.
