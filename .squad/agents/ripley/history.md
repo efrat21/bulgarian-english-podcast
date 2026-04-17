@@ -102,3 +102,14 @@
 - Routed to Parker (Audio Dev) as correct owner for multi-voice TTS implementation
 - Confirmed Parker's fix in PR #7: bilingual voice routing via language segmentation and voice switching
 - Nested repo commit 14d429b staged; ready for push and PR merge
+
+## Recent Session (20260417T204500Z)
+
+📌 **PR #7 Review and Merge Complete (Issue #6 Resolved)**
+- Reviewed PR #7 ("Fix missing Bulgarian voice in bilingual podcast audio") as candidate for issue #6
+- Quality assessment: APPROVED. 66 tests pass; stateless temp-WAV architecture is clean; backward compatible
+- Merged PR #7 to `my-project/master` (commit 7f5ddf3) and pushed to GitHub
+- Discarded Parker's local segment-caching approach (14d429b) in favor of simpler PR #7 design
+- Issue #6 now resolved: Bulgarian voice successfully renders in bilingual podcasts
+- CLI now exposes `--en-voice` / `--bg-voice` flags on generate-audio and run commands
+- Decision documented for Scribe to merge into active decisions
