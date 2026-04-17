@@ -9,12 +9,14 @@ Local-first Python CLI for turning a public Knigovishte article into:
 
 ## What is implemented
 
-- `plan` prints the artifact paths that will be used for a URL.
+- `plan` prints the artifact paths that will be used for a URL or filter-selected article.
 - `fetch` downloads a Knigovishte article, parses the Bulgarian title/body, and caches the HTML.
 - `translate` calls Langbly and saves ordered English sentence pairs.
 - `build-script` formats the bilingual episode script.
 - `generate-audio` renders the script to a local `.wav` file with `pyttsx3`.
 - `run` executes the full fetch → translate → script → audio pipeline.
+
+**NEW:** All commands now support filter-based article selection via `--filter` flag, allowing automatic selection of articles by length or category. Without explicit `--url`, the latest article is selected by default.
 
 The app is already wired end to end. It is not a scaffold-only README anymore.
 
@@ -54,6 +56,8 @@ LANGBLY_BASE_URL=https://api.langbly.com
 
 Run from `my-project\`.
 
+### With explicit URL
+
 ```powershell
 python main.py plan --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
@@ -62,6 +66,42 @@ python main.py build-script --url "https://www.knigovishte.bg/vijte/1532-kolko-t
 python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --refresh
+```
+
+### With filter-based article selection
+
+```powershell
+# Get the latest article (no filter specified)
+python main.py run
+
+# Filter by article length (sentence count)
+# Edit filters.json with: {"min_length": 10, "max_length": 50}
+python main.py run --filter filters.json
+
+# Use a custom filter file
+python main.py fetch --filter my-custom-filters.json
+```
+
+### Filter configuration
+
+Create a JSON file (e.g., `filters.json`) with optional filtering criteria:
+
+```json
+{
+  "min_length": 10,
+  "max_length": 50,
+  "category": null
+}
+```
+
+Supported filters:
+- `min_length`: Minimum number of sentences (null = no minimum)
+- `max_length`: Maximum number of sentences (null = no maximum)
+- `category`: Reserved for future category filtering (not yet implemented)
+
+### Testing
+
+```powershell
 python -m unittest discover -s tests -v
 ```
 
@@ -70,6 +110,7 @@ Package-style entry points also work after install:
 ```powershell
 python -m knigovishte_podcast plan --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 knigovishte-podcast run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
+knigovishte-podcast run --filter filters.json
 ```
 
 ## Quality checks
@@ -122,6 +163,8 @@ Key code paths:
 - Translation depends on Langbly availability, credentials, and response shape.
 - Audio generation currently targets local `.wav` output only.
 - `pyttsx3` voice availability varies by machine and installed system voices.
+- Filter-based selection scans the Knigovishte listing page and fetches articles sequentially; performance depends on network and filter criteria.
+- Category filtering is reserved for future implementation when article metadata becomes available.
 
 ## Packaging and deployment strategy
 

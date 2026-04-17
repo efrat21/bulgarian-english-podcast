@@ -6,6 +6,7 @@ from pathlib import Path
 from .config import ProjectPaths, TranslationConfig, episode_slug_from_url
 from .models import Article, Translation
 from .pipeline import pipeline as build_pipeline
+from .services.article_selector import ArticleFilter, ArticleSelector
 from .services.fetcher import KnigovishteArticleFetcher
 from .services.script_builder import PodcastScriptBuilder
 from .services.translator import LangblyTranslator
@@ -26,12 +27,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Create local data folders and print the planned output paths for a source URL.",
     )
     _add_url_argument(plan_parser)
+    _add_filter_argument(plan_parser)
 
     fetch_parser = subparsers.add_parser(
         "fetch",
         help="Fetch a Knigovishte article, cache its HTML locally, and print the parsed summary.",
     )
     _add_url_argument(fetch_parser)
+    _add_filter_argument(fetch_parser)
     _add_refresh_argument(fetch_parser)
 
     translate_parser = subparsers.add_parser(
@@ -39,6 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fetch and translate a Knigovishte article, then save a translation text artifact.",
     )
     _add_url_argument(translate_parser)
+    _add_filter_argument(translate_parser)
     _add_refresh_argument(translate_parser)
 
     build_script_parser = subparsers.add_parser(
@@ -46,6 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fetch, translate, and save the bilingual podcast script for a source URL.",
     )
     _add_url_argument(build_script_parser)
+    _add_filter_argument(build_script_parser)
     _add_refresh_argument(build_script_parser)
 
     generate_audio_parser = subparsers.add_parser(
@@ -53,6 +58,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fetch, translate, build the script, and generate the local podcast audio file.",
     )
     _add_url_argument(generate_audio_parser)
+    _add_filter_argument(generate_audio_parser)
     _add_refresh_argument(generate_audio_parser)
 
     run_parser = subparsers.add_parser(
@@ -60,13 +66,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Run the full fetch → translate → script → audio pipeline for a source URL.",
     )
     _add_url_argument(run_parser)
+    _add_filter_argument(run_parser)
     _add_refresh_argument(run_parser)
 
     return parser
 
 
 def _add_url_argument(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--url", required=True, help="Knigovishte article URL.")
+    parser.add_argument("--url", help="Knigovishte article URL.")
+
+
+def _add_filter_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--filter",
+        type=Path,
+        help="Path to JSON file with filter criteria (min_length, max_length, category).",
+    )
 
 
 def _add_refresh_argument(parser: argparse.ArgumentParser) -> None:
@@ -140,9 +155,11 @@ def _render_translation_text(article: Article, translation: Translation) -> str:
     return "\n".join(lines).strip()
 
 
-def _print_plan(url: str) -> int:
+def _print_plan(args: argparse.Namespace) -> int:
     paths = ProjectPaths.from_root()
     paths.ensure()
+
+    url = _resolve_article_url(args, paths) if not args.url else args.url
     slug = episode_slug_from_url(url)
 
     print("Stack: Python 3.11+ stdlib-first CLI scaffold")
@@ -166,9 +183,12 @@ def _print_article_details(article: Article, *, used_cached_html: bool, cache_pa
 def _run_fetch(args: argparse.Namespace) -> int:
     paths = ProjectPaths.from_root()
     paths.ensure()
+
+    url = _resolve_article_url(args, paths) if not args.url else args.url
+
     article, cache_path, used_cached_html = _load_article(
         paths,
-        args.url,
+        url,
         use_cached_html=not args.refresh,
     )
     _print_article_details(article, used_cached_html=used_cached_html, cache_path=cache_path)
@@ -180,9 +200,12 @@ def _run_fetch(args: argparse.Namespace) -> int:
 def _run_translate(args: argparse.Namespace) -> int:
     paths = ProjectPaths.from_root()
     paths.ensure()
+
+    url = _resolve_article_url(args, paths) if not args.url else args.url
+
     article, cache_path, used_cached_html = _load_article(
         paths,
-        args.url,
+        url,
         use_cached_html=not args.refresh,
     )
     translation, translation_path = _translate_article(paths, article)
@@ -199,9 +222,12 @@ def _run_translate(args: argparse.Namespace) -> int:
 def _run_build_script(args: argparse.Namespace) -> int:
     paths = ProjectPaths.from_root()
     paths.ensure()
+
+    url = _resolve_article_url(args, paths) if not args.url else args.url
+
     article, cache_path, used_cached_html = _load_article(
         paths,
-        args.url,
+        url,
         use_cached_html=not args.refresh,
     )
     translation, translation_path = _translate_article(paths, article)
@@ -219,9 +245,12 @@ def _run_build_script(args: argparse.Namespace) -> int:
 def _run_generate_audio(args: argparse.Namespace) -> int:
     paths = ProjectPaths.from_root()
     paths.ensure()
+
+    url = _resolve_article_url(args, paths) if not args.url else args.url
+
     article, cache_path, used_cached_html = _load_article(
         paths,
-        args.url,
+        url,
         use_cached_html=not args.refresh,
     )
     translation, translation_path = _translate_article(paths, article)
@@ -244,7 +273,11 @@ def _run_generate_audio(args: argparse.Namespace) -> int:
 def _run_pipeline(args: argparse.Namespace) -> int:
     paths = ProjectPaths.from_root()
     paths.ensure()
-    plan = build_pipeline(paths=paths, use_cached_html=not args.refresh).run(args.url)
+
+    # Determine the article URL: explicit --url or select by filter
+    article_url = _resolve_article_url(args, paths)
+
+    plan = build_pipeline(paths=paths, use_cached_html=not args.refresh).run(article_url)
 
     print(f"Article URL: {plan.article.source_url}")
     print(f"Fetched title: {plan.article.title_bg}")
@@ -257,13 +290,39 @@ def _run_pipeline(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resolve_article_url(args: argparse.Namespace, paths: ProjectPaths) -> str:
+    """
+    Resolve the article URL from command line arguments.
+
+    Priority:
+    1. Explicit --url if provided
+    2. Filter-based selection if --filter is provided
+    3. Latest article if neither is provided
+    """
+    if args.url:
+        return args.url
+
+    # Load filter if provided, otherwise use None (latest article)
+    article_filter = None
+    if hasattr(args, "filter") and args.filter:
+        article_filter = ArticleFilter.from_json(args.filter)
+        print(f"Selecting article with filter: {args.filter}")
+    else:
+        print("Selecting latest article from Knigovishte...")
+
+    selector = ArticleSelector()
+    article = selector.select_article(article_filter)
+    print(f"Selected article: {article.source_url}")
+    return article.source_url
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
     try:
         if args.command == "plan":
-            return _print_plan(args.url)
+            return _print_plan(args)
         if args.command == "fetch":
             return _run_fetch(args)
         if args.command == "translate":
