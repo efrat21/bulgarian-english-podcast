@@ -1,69 +1,138 @@
 # Knigovishte Podcast Builder
 
-Starter scaffold for a local-first app that will:
+Local-first Python CLI for turning a public Knigovishte article into:
 
-1. fetch a Bulgarian article from `https://www.knigovishte.bg/`
-2. translate it to English
-3. generate a podcast-style audio file
+1. cached source HTML
+2. English translation text
+3. a bilingual podcast script
+4. a generated local `.wav` episode
 
-## Why this stack
+## What is implemented
 
-- **Python 3.11+**
-- **stdlib-first scaffold**
-- **CLI-oriented structure**
+- `plan` prints the artifact paths that will be used for a URL.
+- `fetch` downloads a Knigovishte article, parses the Bulgarian title/body, and caches the HTML.
+- `translate` calls Langbly and saves ordered English sentence pairs.
+- `build-script` formats the bilingual episode script.
+- `generate-audio` renders the script to a local `.wav` file with `pyttsx3`.
+- `run` executes the full fetch → translate → script → audio pipeline.
 
-This keeps the first step simple on Windows, fits scraping/translation/TTS well, and leaves cheap extension points for site parsing, translation providers, and audio generation later.
+The app is already wired end to end. It is not a scaffold-only README anymore.
 
-## Current shape
+## Environment requirements
 
-- `src\knigovishte_podcast\` — application package
-- `src\knigovishte_podcast\services\` — pipeline boundaries
-- `tests\` — unit tests for deterministic logic
-- `data\articles\` — fetched source material
-- `data\scripts\` — generated podcast scripts
-- `data\audio\` — generated audio files
+- Python **3.11+**
+- Windows-friendly local environment
+- Internet access for `fetch`, `translate`, `build-script`, `generate-audio`, and `run`
+- A valid `LANGBLY_API_KEY` for any command that translates text
+- A working local speech engine supported by `pyttsx3` for audio generation
 
-Implemented today:
+Install dependencies:
 
-- `KnigovishteArticleFetcher` downloads a public Knigovishte/Vijte article page, extracts the Bulgarian title, and splits article text into Bulgarian sentences.
-- `LangblyTranslator` translates the title plus article sentences as one ordered batch.
-- `PodcastScriptBuilder` formats the bilingual podcast script.
-- `Pyttsx3PodcastAudioGenerator` renders the script to a local `.wav` file.
-- `ArticleToPodcastPipeline` caches fetched HTML, writes the generated script, and hands the script to TTS behind one stable interface.
+```powershell
+pip install -r requirements.txt
+```
 
-## Planned flow
+Install the local package plus developer tooling:
 
-1. `KnigovishteArticleFetcher` extracts title and Bulgarian sentences
-2. `ArticleTranslator` produces English title and sentence pairs
-3. `PodcastScriptBuilder` formats the bilingual script
-4. `PodcastAudioGenerator` renders audio from the script
+```powershell
+pip install -e ".[dev]"
+```
 
-## Commands to use once Python is available
+Minimal `.env` in `my-project\`:
+
+```dotenv
+LANGBLY_API_KEY=your_key_here
+```
+
+Optional override:
+
+```dotenv
+LANGBLY_BASE_URL=https://api.langbly.com
+```
+
+## Key commands
+
+Run from `my-project\`.
 
 ```powershell
 python main.py plan --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
-python main.py fetch --url "https://www.knigovishte.bg/book/1532-kolko-tezhi-edna-leka-muha"
+python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py translate --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py build-script --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --refresh
-python -m unittest discover -s tests
+python -m unittest discover -s tests -v
 ```
 
-All commands use local-first defaults:
+Package-style entry points also work after install:
 
-- article HTML cache: `data\articles\{slug}.html`
-- translation text artifact: `data\scripts\{slug}.translation.txt`
-- podcast script: `data\scripts\{slug}.txt`
-- audio output: `data\audio\{slug}.wav`
+```powershell
+python -m knigovishte_podcast plan --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
+knigovishte-podcast run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
+```
 
-## Fetcher limitations in this first slice
+## Quality checks
 
-- Supports public article pages that expose the current `kmedia-article-title` and `kmedia-article-content` HTML structure.
-- Ignores quiz/comment UI and image captions; it focuses on title plus article body text.
-- Sentence splitting is heuristic (`.`, `!`, `?`, `…`, and line breaks), so edge cases in Bulgarian abbreviations are not handled yet.
+Run from `my-project\`.
 
-## Current limitation
+```powershell
+ruff check main.py src tests
+mypy main.py src
+python -m unittest discover -s tests -v
+python -m build
+```
 
-The `translate`, `build-script`, `generate-audio`, and `run` commands depend on a valid `LANGBLY_API_KEY` in `my-project\.env` or the environment.
+GitHub Actions now runs the same lint, type-check, test, and package-build flow on pushes and pull requests that touch the app or workflow.
+
+## Artifact layout
+
+- `data\articles\{slug}.html` — cached source HTML
+- `data\scripts\{slug}.translation.txt` — translation artifact
+- `data\scripts\{slug}.txt` — bilingual podcast script
+- `data\audio\{slug}.wav` — generated audio
+
+The CLI is local-first: cached article HTML is reused unless `--refresh` is passed.
+
+## Architecture
+
+```text
+Knigovishte URL
+   -> KnigovishteArticleFetcher
+   -> LangblyTranslator
+   -> PodcastScriptBuilder
+   -> Pyttsx3PodcastAudioGenerator
+   -> local artifacts in data\
+```
+
+Key code paths:
+
+- `src\knigovishte_podcast\cli.py` — command parsing and user-facing workflow
+- `src\knigovishte_podcast\pipeline.py` — end-to-end orchestration
+- `src\knigovishte_podcast\services\fetcher.py` — Knigovishte fetch + parse
+- `src\knigovishte_podcast\services\translator.py` — Langbly API adapter
+- `src\knigovishte_podcast\services\script_builder.py` — bilingual script formatter
+- `src\knigovishte_podcast\services\tts.py` — local audio generation
+- `tests\` — unittest coverage for CLI, pipeline, and service boundaries
+
+## Current limitations
+
+- Fetching only supports public Knigovishte article pages that still use the current `kmedia-article-title` and `kmedia-article-content` structure.
+- Sentence splitting is heuristic and may mishandle Bulgarian abbreviations or unusual punctuation.
+- Translation depends on Langbly availability, credentials, and response shape.
+- Audio generation currently targets local `.wav` output only.
+- `pyttsx3` voice availability varies by machine and installed system voices.
+
+## Packaging and deployment strategy
+
+- Ship the app as a normal Python package built from `pyproject.toml`.
+- The practical distribution unit today is a wheel or source archive created with `python -m build`.
+- Install locally with `pip install .` or `pip install dist\knigovishte_podcast-0.1.0-py3-none-any.whl`.
+- Do **not** add Docker or hosted deployment yet; this is a local CLI, not a long-running service.
+
+## Developer notes
+
+- Main package path: `src\knigovishte_podcast\`
+- Runtime config lives in `src\knigovishte_podcast\config.py`
+- `ProjectPaths.ensure()` creates the stable local artifact folders on demand
+- Tests currently run with `unittest`, not `pytest`

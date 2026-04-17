@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
-import os
-import re
+
 from dotenv import load_dotenv
 
 

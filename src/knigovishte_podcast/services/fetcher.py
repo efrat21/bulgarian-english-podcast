@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from html.parser import HTMLParser
-import re
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 

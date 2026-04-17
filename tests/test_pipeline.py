@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from knigovishte_podcast.cli import main
 from knigovishte_podcast.config import ProjectPaths, episode_slug_from_url
 from knigovishte_podcast.models import Article, PodcastPlan, Translation
-from knigovishte_podcast.pipeline import ArticleToPodcastPipeline, pipeline as build_pipeline
+from knigovishte_podcast.pipeline import ArticleToPodcastPipeline
+from knigovishte_podcast.pipeline import pipeline as build_pipeline
 
 
 class StubFetcher:
