@@ -17,6 +17,7 @@ Agent Scribe initialized and ready for work.
 📌 Orchestration and session logs created on 2026-04-13T180001Z
 📌 Knigovishte fetcher decision consolidated (2026-04-13T180002Z)
 📌 Squad health check performed on 2026-04-16 (Coordinator direct); drift detected in template files
+📌 Squad repair completed on 2026-04-17 (Template restoration + Git remote wiring); decision inbox merged (7 entries)
 
 ## Work Completed
 
@@ -31,6 +32,12 @@ Agent Scribe initialized and ready for work.
 - Created session log for project structure decisions
 - Created orchestration and session logs for Knigovishte fetcher work
 - Logged squad health check session (2026-04-16): detected template drift, GitHub wiring incomplete
+- Completed Squad repair session (2026-04-17):
+  - Created orchestration logs for template restoration and git remote wiring
+  - Created session log documenting repair outcomes
+  - Merged decision inbox (7 entries including git remote and langbly translator directives)
+  - Deleted all merged inbox files
+  - Updated decisions.md with two new decisions (git remote + langbly translator)
 
 ## Learnings
 

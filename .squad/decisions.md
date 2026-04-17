@@ -19,7 +19,16 @@ Podcast pipeline configuration:
   Good job! See you soon!
   ```
 
-### 2. Initial Project Structure (2026-04-13)
+### 2. User Directive: Translation Provider (2026-04-15T12:25:27Z)
+**Source:** User request (via Copilot)
+
+Use Langbly API for the translator implementation instead of LLM or other translation services.
+
+**Rationale:** User preference — explicit direction to integrate Langbly.
+
+**Impact:** Ash (Language/AI Dev) should update translator.py to use Langbly API as the backend provider behind the ArticleTranslator interface.
+
+### 3. Initial Project Structure (2026-04-13)
 **Owner:** Ripley
 
 Architectural decision for first-pass scaffold:
@@ -57,6 +66,36 @@ First implementation slice for article fetching from knigovishte.bg:
 - **Scope:** Support only public Knigovishte/Vijte article pages with `kmedia-article-title` and `kmedia-article-content`
 - **Constraints:** Strip quiz/comment chrome and image captions; use punctuation/newline-based sentence splitting as first-slice limitation
 - **Deliverables:** `src/knigovishte_podcast/services/fetcher.py`, `tests/test_fetcher.py`, README updates, decision inbox entry
+
+### 6. Configure Git Origin Remote (2026-04-17T151016Z)
+**Owner:** Ripley
+
+Configured the repository's `origin` remote to point to the canonical upstream repository.
+
+**Decision:** Added git remote `origin` with URL: `https://github.com/efrat21/bulgarian-english-podcast`
+
+**Rationale:**
+- No remote was previously configured
+- This remote serves as the canonical upstream for all team members
+- Enables push/pull operations and CI/CD integration
+
+**Outcome:** Remote configuration complete with both fetch and push URLs configured.
+
+### 7. Copilot Instructions Refactored (2026-04-17T151016Z)
+**Owner:** Ripley
+
+Refined `.github/copilot-instructions.md` to reflect what is true today, not future speculation.
+
+**Changes:**
+- Removed generic "When Code is Added" section
+- Removed placeholder MCP servers section
+- Kept and clarified Squad workspace structure, work routing rules, PR/branch guidelines, and decision-writing protocol
+
+**Rationale:**
+- Constraint: No build, test, or lint tooling yet. Stack is TBD.
+- Principle: Document only what is actionable and true today.
+
+**Outcome:** Agents can read instructions in 90 seconds without wading through conditional future sections. Clear, actionable guidance for current state.
 
 ## Governance
 
