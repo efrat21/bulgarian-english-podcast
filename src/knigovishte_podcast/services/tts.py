@@ -7,6 +7,8 @@ import pyttsx3
 
 from ..config import ProjectPaths
 
+AUDIO_FILE_EXTENSION = ".wav"
+
 
 class PodcastAudioGenerator(ABC):
     @abstractmethod
@@ -40,11 +42,15 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         if not episode_slug or not episode_slug.strip():
             raise ValueError("episode_slug must not be empty.")
 
+        normalized_slug = episode_slug.strip()
+
         project_paths = ProjectPaths.from_root()
         project_paths.ensure()
 
-        audio_path = project_paths.audio / f"{episode_slug}.wav"
+        audio_path = project_paths.audio / f"{normalized_slug}{AUDIO_FILE_EXTENSION}"
         audio_path.parent.mkdir(parents=True, exist_ok=True)
+        if audio_path.exists():
+            audio_path.unlink()
 
         engine = pyttsx3.init()
         try:
@@ -53,11 +59,7 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
             if self.volume is not None:
                 engine.setProperty("volume", self.volume)
             if self.voice_name is not None:
-                voices = engine.getProperty("voices") or []
-                for voice in voices:
-                    if self.voice_name.lower() in voice.name.lower():
-                        engine.setProperty("voice", voice.id)
-                        break
+                self._set_voice(engine)
 
             engine.save_to_file(script_text, str(audio_path))
             engine.runAndWait()
@@ -70,3 +72,18 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
             )
 
         return audio_path
+
+    def _set_voice(self, engine: pyttsx3.Engine) -> None:
+        requested_voice = (self.voice_name or "").strip().lower()
+        if not requested_voice:
+            raise ValueError("voice_name must not be blank when provided.")
+
+        voices = engine.getProperty("voices") or []
+        for voice in voices:
+            voice_name = getattr(voice, "name", "") or ""
+            voice_id = getattr(voice, "id", "") or ""
+            if requested_voice in voice_name.lower() or requested_voice in voice_id.lower():
+                engine.setProperty("voice", voice_id)
+                return
+
+        raise ValueError(f"Requested voice not available: {self.voice_name}")

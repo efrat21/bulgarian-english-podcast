@@ -1,7 +1,11 @@
 from .fetcher import ArticleFetcher, KnigovishteArticleFetcher
 from .script_builder import PodcastScriptBuilder
 from .translator import ArticleTranslator, LangblyTranslator, PlaceholderTranslator
-from .tts import PlaceholderPodcastAudioGenerator, PodcastAudioGenerator
+from .tts import (
+    PlaceholderPodcastAudioGenerator,
+    PodcastAudioGenerator,
+    Pyttsx3PodcastAudioGenerator,
+)
 
 __all__ = [
     "ArticleFetcher",
@@ -12,4 +16,5 @@ __all__ = [
     "PlaceholderTranslator",
     "PodcastAudioGenerator",
     "PodcastScriptBuilder",
+    "Pyttsx3PodcastAudioGenerator",
 ]

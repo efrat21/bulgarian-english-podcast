@@ -4,6 +4,7 @@ import argparse
 
 from .config import ProjectPaths, TranslationConfig, episode_slug_from_url
 from .services.fetcher import KnigovishteArticleFetcher
+from .services.tts import AUDIO_FILE_EXTENSION
 from .services.translator import LangblyTranslator
 
 
@@ -49,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Episode slug: {slug}")
         print(f"Article cache: {paths.articles / f'{slug}.html'}")
         print(f"Script output: {paths.scripts / f'{slug}.txt'}")
-        print(f"Audio output: {paths.audio / f'{slug}.mp3'}")
+        print(f"Audio output: {paths.audio / f'{slug}{AUDIO_FILE_EXTENSION}'}")
         return 0
 
     if args.command == "fetch":
