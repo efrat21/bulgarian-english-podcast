@@ -2,7 +2,10 @@
 
 from unittest.mock import Mock, patch
 from pathlib import Path
+import sys
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from knigovishte_podcast.config import TranslationConfig
 from knigovishte_podcast.models import Article, Translation
@@ -105,8 +108,35 @@ def test_langbly_translator_api_error_handling():
             print("✓ test_langbly_translator_api_error_handling passed")
 
 
+def test_langbly_translator_rejects_mismatched_batch_response():
+    """Test that LangblyTranslator rejects partial batch responses."""
+    config = TranslationConfig(api_key="test_key")
+    article = Article(
+        source_url="https://example.com",
+        title_bg="Заглавие",
+        sentences_bg=("Предложение 1.", "Предложение 2."),
+    )
+
+    mock_response = Mock()
+    mock_response.json.return_value = {
+        "data": {"translations": [{"translatedText": "Title only"}]}
+    }
+    mock_response.text = '{"data":{"translations":[{"translatedText":"Title only"}]}}'
+    mock_response.raise_for_status.return_value = None
+
+    with patch("knigovishte_podcast.services.translator.requests.post", return_value=mock_response):
+        translator = LangblyTranslator(config)
+        try:
+            translator.translate(article)
+            assert False, "Should have raised RuntimeError"
+        except RuntimeError as e:
+            assert "parse" in str(e).lower()
+            print("✓ test_langbly_translator_rejects_mismatched_batch_response passed")
+
+
 if __name__ == "__main__":
     test_langbly_translator_translate()
     test_langbly_translator_api_payload()
     test_langbly_translator_api_error_handling()
+    test_langbly_translator_rejects_mismatched_batch_response()
     print("\n✅ All translator tests passed!")
