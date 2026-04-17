@@ -11,7 +11,11 @@ dist/
 
 data/articles/*
 !data/articles/.gitkeep
+!data/articles/vijte-1532-kolko-tezhi-edna-leka-muha.html
 data/scripts/*
 !data/scripts/.gitkeep
+!data/scripts/vijte-1532-kolko-tezhi-edna-leka-muha.translation.txt
+!data/scripts/vijte-1532-kolko-tezhi-edna-leka-muha.txt
 data/audio/*
 !data/audio/.gitkeep
+!data/audio/vijte-1532-kolko-tezhi-edna-leka-muha.wav

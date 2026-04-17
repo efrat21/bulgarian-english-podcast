@@ -1,0 +1,20 @@
+Source URL: https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha
+Bulgarian title: Колко тежи една лека муха?
+English title: How Much Does a Flyweight Weigh?
+
+1. EN: How many flies are there in the world?
+   BG: Колко мухи има по света?
+2. EN: Many different flies fly around the world.
+   BG: По света летят много и най-различни мухи.
+3. EN: So let us try to calculate how much a fly weighs!
+   BG: Затова да се опитаме да изчислим колко тежи една муха!
+4. EN: How much does a fly weigh?
+   BG: Колко тежи една муха?
+5. EN: A heavyweight is 50 to 52 kilograms, and a lightweight is about 47 kilograms.
+   BG: Една тежка муха е 50 до 52 килограма, а една лека муха - около 47 килограма.
+6. EN: But in nature, a real fly weighs only about 0.007 grams.
+   BG: Но в природата истинската муха тежи само около 0.007 грама.
+7. EN: Why do we ask this?
+   BG: Защо го питаме?
+8. EN: Because in boxing, flyweight and light flyweight are weight categories for boxers, not insects!
+   BG: Защото в бокса „тежка муха" и „лека муха" са категории по тегло на боксьорите, а не на насекомите!
