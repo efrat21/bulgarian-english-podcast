@@ -93,3 +93,12 @@
 - Created `.squad/plugins/marketplaces.json` with `tamirdresher/squad-skills` registered as a marketplace source
 - Marketplace structure established per plugin-marketplace.md template
 - Source now available for browsing and installing skills into agent roles during team member setup
+
+## Recent Session (20260417T173826Z)
+
+📌 **Issue #6 Triage and Routing (Bulgarian Voice Bug)**
+- Assessed critical production issue: missing Bulgarian voice in bilingual podcast output
+- Root cause identified: single-voice audio generation path in TTS
+- Routed to Parker (Audio Dev) as correct owner for multi-voice TTS implementation
+- Confirmed Parker's fix in PR #7: bilingual voice routing via language segmentation and voice switching
+- Nested repo commit 14d429b staged; ready for push and PR merge
