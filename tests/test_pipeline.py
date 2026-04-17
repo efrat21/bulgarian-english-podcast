@@ -231,7 +231,11 @@ class CliRunCommandTests(unittest.TestCase):
                     exit_code = main(["run", "--url", article.source_url])
 
         self.assertEqual(exit_code, 0)
-        build_pipeline_mock.assert_called_once_with(paths=self.paths, use_cached_html=True)
+        build_pipeline_mock.assert_called_once()
+        call_kwargs = build_pipeline_mock.call_args.kwargs
+        self.assertEqual(call_kwargs["paths"], self.paths)
+        self.assertEqual(call_kwargs["use_cached_html"], True)
+        self.assertIn("audio_generator", call_kwargs)
         mock_pipeline.run.assert_called_once_with(article.source_url)
         output = stdout.getvalue()
         self.assertIn("Fetched title: Българско заглавие", output)

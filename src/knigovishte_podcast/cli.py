@@ -60,6 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_url_argument(generate_audio_parser)
     _add_filter_argument(generate_audio_parser)
     _add_refresh_argument(generate_audio_parser)
+    _add_voice_arguments(generate_audio_parser)
 
     run_parser = subparsers.add_parser(
         "run",
@@ -68,6 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_url_argument(run_parser)
     _add_filter_argument(run_parser)
     _add_refresh_argument(run_parser)
+    _add_voice_arguments(run_parser)
 
     return parser
 
@@ -89,6 +91,21 @@ def _add_refresh_argument(parser: argparse.ArgumentParser) -> None:
         "--refresh",
         action="store_true",
         help="Ignore any cached article HTML and fetch the page again.",
+    )
+
+
+def _add_voice_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--en-voice",
+        metavar="NAME",
+        help="TTS voice name (or substring) to use for English lines.",
+    )
+    parser.add_argument(
+        "--bg-voice",
+        metavar="NAME",
+        help="TTS voice name (or substring) to use for Bulgarian lines. "
+        "When provided, the script is split by language and each part is "
+        "spoken with the matching voice.",
     )
 
 
@@ -257,7 +274,10 @@ def _run_generate_audio(args: argparse.Namespace) -> int:
     script_text = PodcastScriptBuilder().build(article, translation)
     script_path = _script_output_path(paths, article.source_url)
     script_path.write_text(script_text, encoding="utf-8")
-    audio_path = Pyttsx3PodcastAudioGenerator().generate(
+    audio_path = Pyttsx3PodcastAudioGenerator(
+        voice_name=args.en_voice or None,
+        bg_voice_name=args.bg_voice or None,
+    ).generate(
         script_text,
         episode_slug_from_url(article.source_url),
     )
@@ -277,7 +297,14 @@ def _run_pipeline(args: argparse.Namespace) -> int:
     # Determine the article URL: explicit --url or select by filter
     article_url = _resolve_article_url(args, paths)
 
-    plan = build_pipeline(paths=paths, use_cached_html=not args.refresh).run(article_url)
+    plan = build_pipeline(
+        paths=paths,
+        use_cached_html=not args.refresh,
+        audio_generator=Pyttsx3PodcastAudioGenerator(
+            voice_name=args.en_voice or None,
+            bg_voice_name=args.bg_voice or None,
+        ),
+    ).run(article_url)
 
     print(f"Article URL: {plan.article.source_url}")
     print(f"Fetched title: {plan.article.title_bg}")
