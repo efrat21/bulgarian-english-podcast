@@ -28,3 +28,5 @@
 📌 Team update (2026-04-17T16:07:23Z): pyttsx3 output is WAV-first — standardize audio artifact on .wav format, explicit voice validation with failure on unavailable voice, future MP3 support as separate enhancement. Decided by Ripley
 
 📌 Team update (20260417T173826Z): Bilingual TTS voice routing implemented — script language detection and per-segment voice switching via WAV concatenation; backward compatible single-voice path unchanged. Fixed by Parker
+
+📌 Team update (2026-04-17T20:55:00Z): PR #7 bilingual voice routing merged to master — stateless temp-WAV architecture approved as canonical design; local commit 14d429b superseded but preserved for reference. Issue #6 resolved. Decided by Ripley

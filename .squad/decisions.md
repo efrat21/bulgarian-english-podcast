@@ -225,6 +225,25 @@ This is the **application repository**, not the squad coordination repository.
 
 **For now:** Squad decisions are **locally safe** (committed to disk at `.squad/decisions.md`). They just cannot be pushed to remote until this root/app separation is clarified.
 
+### 16. Ripley Decision: PR #7 Bilingual Voice Routing Approved & Merged (2026-04-17T20:55:00Z)
+
+**Owner:** Ripley
+
+Issue #6 (missing Bulgarian voice in podcast audio) is resolved by PR #7 merge.
+
+**Solution:** Bilingual voice routing via language-based script segmentation and per-segment voice switching.
+- Architecture: Stateless temp-WAV concatenation using stdlib `wave` module
+- Language detection: Script prefixes (`"Bulgarian:"`, `"English:"`)
+- CLI support: Added `--en-voice` and `--bg-voice` flags to `generate-audio` and `run` commands
+- Test coverage: 66 passing tests including comprehensive bilingual test cases
+- Backward compatible: Single-voice mode unchanged when `--bg-voice` not specified
+
+**Design rationale:** This stateless temp-WAV approach is preferred over segment-directory caching because it is simpler, uses only stdlib dependencies, and has no persistent state management overhead.
+
+**Impact:** Parker's local commit (14d429b) implements a valid but architecturally incompatible segment-directory approach. That work is superseded by PR #7 merge; Parker can reference it for alternative approaches but should align future voice work with the merged design.
+
+**Outcome:** Master branch now reflects the canonical bilingual voice design. Issue #6 resolved and ready for closure.
+
 ## Governance
 
 - All meaningful changes require team consensus
