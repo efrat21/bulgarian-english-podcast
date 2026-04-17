@@ -30,3 +30,5 @@
 📌 Team update (20260417T173826Z): Bilingual TTS voice routing implemented — script language detection and per-segment voice switching via WAV concatenation; backward compatible single-voice path unchanged. Fixed by Parker
 
 📌 Team update (2026-04-17T20:55:00Z): PR #7 bilingual voice routing merged to master — stateless temp-WAV architecture approved as canonical design; local commit 14d429b superseded but preserved for reference. Issue #6 resolved. Decided by Ripley
+
+📌 Team update (2026-04-17T18:39:32Z): Bulgarian voice validation confirmed — environment (pyttsx3/SAPI) exposes only English voices; no Bulgarian voice available on local machine; explicit voice-not-available errors working as designed. Verified by Parker & Lambert
