@@ -19,10 +19,10 @@
       "title": "Audit and update requirements.txt with actual imports",
       "description": "Scan all Python files in my-project and identify all non-stdlib imports currently used. Update requirements.txt to include: requests>=2.31, python-dotenv>=1.0, pyttsx3>=2.90 (already present). Verify pinned versions match actual usage.",
       "owner": "Bishop",
-      "status": "pending",
+      "status": "done",
       "priority": "high",
       "dependencies": [],
-      "notes": "Current file lists requests, python-dotenv, pyttsx3 but needs audit against actual src/ code to ensure accuracy."
+      "notes": "Audit now matches current src/ and tests imports: requests, python-dotenv, and pyttsx3 are the only non-stdlib dependencies in active code."
     },
     {
       "id": "fetcher-impl",
@@ -39,10 +39,10 @@
       "title": "Langbly-backed article translator",
       "description": "Implement ArticleTranslator using Langbly API per decision #2. Wrap requests library calls with error handling. Support batch and single-article translation modes.",
       "owner": "Ash",
-      "status": "pending",
+      "status": "done",
       "priority": "critical",
       "dependencies": ["requirements-txt-audit"],
-      "notes": "Depends on requirements.txt audit to ensure 'requests' is tracked. API key loaded from .env TranslationConfig."
+      "notes": "Completed. LangblyTranslator batches title plus sentences in order, reads API key from TranslationConfig, validates batch response shape/count, and surfaces failures with RuntimeError messages."
     },
     {
       "id": "script-builder",
