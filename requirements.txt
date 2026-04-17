@@ -1,9 +1,9 @@
 # Requirements for knigovishte-podcast
 # Install with: pip install -r requirements.txt
 # 
-# Tracked imports from src/ and tests/ as of 2026-04-17
+# Locked to exact versions for reproducibility (frozen 2026-04-17)
 # stdlib modules (urllib, html.parser, re, argparse, dataclasses, pathlib, os) are excluded
 
-requests>=2.31
-python-dotenv>=1.0
-pyttsx3>=2.90
+requests==2.33.1
+python-dotenv==1.2.2
+pyttsx3==2.99
