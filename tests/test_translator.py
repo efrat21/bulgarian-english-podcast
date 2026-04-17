@@ -79,7 +79,7 @@ class LangblyTranslatorTests(unittest.TestCase):
                 "key": "test_key",
             },
             headers={"Authorization": "Bearer test_key"},
-            timeout=30,
+            timeout=60,
         )
 
     def test_translate_wraps_http_errors(self) -> None:
