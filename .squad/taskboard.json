@@ -89,10 +89,10 @@
       "title": "Comprehensive test suite and edge case verification",
       "description": "Write unit tests for all modules (fetcher, translator, script builder, TTS, pipeline). Test error cases: malformed HTML, API failures, encoding issues, missing files.",
       "owner": "Lambert",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["fetcher-impl", "translator-impl", "script-builder", "tts-impl"],
-      "notes": "Some tests already exist (test_fetcher.py, test_script_builder.py, test_tts.py). Need to expand and add translator, pipeline tests."
+      "notes": "Completed. unittest suite now exercises fetcher, translator, script builder, TTS, pipeline, and CLI edge cases, including translator API failures/response-shape validation, fetch-only pipeline fallback, CLI plan/failure paths, and blank voice-name rejection. Verified with python -m unittest discover -s tests -v and coverage report (97% total, translator 94%, pipeline 100%, CLI 99%)."
     },
     {
       "id": "ci-cd-setup",
