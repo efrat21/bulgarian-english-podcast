@@ -1,0 +1,128 @@
+{
+  "project": "first_squad_project",
+  "description": "Bulgarian-to-English Article Translator with Podcast Generation",
+  "created": "2026-04-17T15:30:00Z",
+  "workflow_note": "Update 'status' and commit to git whenever a task is completed. Run: git add .squad/taskboard.json && git commit -m 'Update task board: <task-id> complete' with the co-author trailer.",
+  "tasks": [
+    {
+      "id": "app-scaffold",
+      "title": "Python application scaffold foundation",
+      "description": "Verify project structure is correct: src/knigovishte_podcast/, tests/, data/ folders exist and __init__.py files are in place.",
+      "owner": "Ripley",
+      "status": "done",
+      "priority": "critical",
+      "dependencies": [],
+      "notes": "Completed in initial scaffolding session. Stdlib-first approach selected."
+    },
+    {
+      "id": "requirements-txt-audit",
+      "title": "Audit and update requirements.txt with actual imports",
+      "description": "Scan all Python files in my-project and identify all non-stdlib imports currently used. Update requirements.txt to include: requests>=2.31, python-dotenv>=1.0, pyttsx3>=2.90 (already present). Verify pinned versions match actual usage.",
+      "owner": "Bishop",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "notes": "Current file lists requests, python-dotenv, pyttsx3 but needs audit against actual src/ code to ensure accuracy."
+    },
+    {
+      "id": "fetcher-impl",
+      "title": "Knigovishte article fetcher (stdlib-first slice)",
+      "description": "Implement KnigovishteArticleFetcher using urllib + HTMLParser. Split into fetch_html() and parse_html() for testability and caching. Support kmedia-article-title and kmedia-article-content.",
+      "owner": "Bishop",
+      "status": "done",
+      "priority": "critical",
+      "dependencies": [],
+      "notes": "Completed. Uses stdlib urllib, HTMLParser, re. Filters out quiz/comment chrome. Punctuation-based sentence splitting as first-slice limitation."
+    },
+    {
+      "id": "translator-impl",
+      "title": "Langbly-backed article translator",
+      "description": "Implement ArticleTranslator using Langbly API per decision #2. Wrap requests library calls with error handling. Support batch and single-article translation modes.",
+      "owner": "Ash",
+      "status": "pending",
+      "priority": "critical",
+      "dependencies": ["requirements-txt-audit"],
+      "notes": "Depends on requirements.txt audit to ensure 'requests' is tracked. API key loaded from .env TranslationConfig."
+    },
+    {
+      "id": "script-builder",
+      "title": "Bilingual script formatter (sentence pairs)",
+      "description": "Implement PodcastScriptBuilder to format Article + Translation into bilingual sentence-by-sentence script per decision #1. Produce script and return as string for TTS pipeline input.",
+      "owner": "Bishop",
+      "status": "done",
+      "priority": "critical",
+      "dependencies": [],
+      "notes": "Completed. Bilingual English-Bulgarian pairs formatted per user template. Tests verify correct sentence ordering."
+    },
+    {
+      "id": "tts-impl",
+      "title": "Podcast audio generation via pyttsx3",
+      "description": "Implement Pyttsx3PodcastAudioGenerator to consume bilingual script and produce .wav/.mp3 output. Handle voice selection, rate, volume settings. Save to data/audio/ folder.",
+      "owner": "Parker",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["script-builder"],
+      "notes": "Test suite exists (test_tts.py). Depends on script builder stabilizing script format."
+    },
+    {
+      "id": "pipeline-integration",
+      "title": "End-to-end pipeline orchestration",
+      "description": "Implement PodcastPlan and pipeline() function to wire together fetcher → translator → script builder → TTS. Handle error cases and caching. Expose via CLI.",
+      "owner": "Bishop",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["fetcher-impl", "translator-impl", "script-builder", "tts-impl"],
+      "notes": "Skeleton exists in pipeline.py. All component modules must be complete first."
+    },
+    {
+      "id": "cli-main-entry",
+      "title": "CLI main entry point and commands",
+      "description": "Flesh out cli.py with full command set: fetch, translate, build-script, generate-audio, run (full pipeline). Support URL input, caching, output paths.",
+      "owner": "Bishop",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": ["pipeline-integration"],
+      "notes": "Skeleton exists. Fetch command partially implemented. Needs translate, build-script, generate-audio, run subcommands."
+    },
+    {
+      "id": "test-coverage",
+      "title": "Comprehensive test suite and edge case verification",
+      "description": "Write unit tests for all modules (fetcher, translator, script builder, TTS, pipeline). Test error cases: malformed HTML, API failures, encoding issues, missing files.",
+      "owner": "Lambert",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["fetcher-impl", "translator-impl", "script-builder", "tts-impl"],
+      "notes": "Some tests already exist (test_fetcher.py, test_script_builder.py, test_tts.py). Need to expand and add translator, pipeline tests."
+    },
+    {
+      "id": "ci-cd-setup",
+      "title": "Add build/test/lint automation",
+      "description": "Set up pytest runner, linting (ruff/flake8), type checking (mypy) in automated CI. Add GitHub Actions workflow to run on push.",
+      "owner": "Ripley",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["test-coverage"],
+      "notes": "No build/test/lint tools exist yet per decision. Will add when stack is confirmed."
+    },
+    {
+      "id": "docs-readme",
+      "title": "Project README and developer guide",
+      "description": "Write README.md covering: what the app does, how to install and run, API overview, architecture diagram, known limitations, future work.",
+      "owner": "Ripley",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["pipeline-integration"],
+      "notes": "Keep concise and developer-focused. Assume readers are familiar with Squad framework."
+    },
+    {
+      "id": "deployment-strategy",
+      "title": "Deployment and packaging strategy",
+      "description": "Decide how to package app for distribution: pip install, PyPI, Docker, or standalone script. Document installation and usage for end users.",
+      "owner": "Ripley",
+      "status": "pending",
+      "priority": "low",
+      "dependencies": ["pipeline-integration", "docs-readme"],
+      "notes": "Defer until pipeline is feature-complete. Will depend on Stack and deployment target."
+    }
+  ]
+}

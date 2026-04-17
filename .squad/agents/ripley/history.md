@@ -19,6 +19,10 @@
 - The fetcher boundary is intentionally split into `fetch_html()` and `parse_html()` so the CLI can cache raw source HTML and tests can verify parsing without network access.
 - `my-project\src\knigovishte_podcast\cli.py` now exposes a `fetch` command that caches article HTML under `my-project\data\articles\` and prints a parse summary for the fetched article.
 - Fetcher tests live in `my-project\tests\test_fetcher.py` and mirror the existing `unittest` style with inline HTML fixtures.
+- Created `.squad/taskboard.json` as the team's operational task tracker (non-markdown, JSON format for structured status tracking). Format includes task ID, owner, status, priority, dependencies, and notes.
+- Taskboard workflow: when a task completes, update its `status` field from "pending" to "done" and commit with `git add .squad/taskboard.json && git commit -m 'Update task board: <task-id> complete'`.
+- Audited actual imports across all Python files in `my-project/` and confirmed `requirements.txt` reflects reality: `requests>=2.31`, `python-dotenv>=1.0`, `pyttsx3>=2.90`. All other imports are stdlib or internal modules.
+- Task `requirements-txt-audit` assigned to Bishop with high priority to ensure ongoing synchronization between code imports and declared dependencies.
 
 ## Recent Session (2026-04-13T180001Z)
 
@@ -52,3 +56,13 @@
 - All files kept concise but complete for coordinator behaviors they document
 - No changes to unrelated project/app files
 - Key patterns: Ralph's loop never asks permission; Ceremonies run before/after work; PRD uses Lead decomposition; Humans block sync only; @copilot routes via issues asynchronously
+
+## Recent Session (2026-04-17T153000Z)
+
+📌 **Taskboard and Requirements Audit Created**
+- Created `.squad/taskboard.json` with 12 tracked tasks, all critical path items assigned to squad members
+- Divided work into logical slices: scaffold (done), translator, TTS, pipeline, CLI, testing, CI/CD, documentation, deployment
+- Established taskboard as the operational source of truth for status tracking and work sequencing
+- Dependencies explicitly encoded (e.g., pipeline waits for all four core modules)
+- Audited `my-project/requirements.txt` against actual imports; confirmed all non-stdlib dependencies are tracked
+- Added task `requirements-txt-audit` assigned to Bishop with high priority to ensure ongoing sync
