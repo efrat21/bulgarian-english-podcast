@@ -10,7 +10,7 @@ from .services.article_selector import ArticleFilter, ArticleSelector
 from .services.fetcher import KnigovishteArticleFetcher
 from .services.script_builder import PodcastScriptBuilder
 from .services.translator import LangblyTranslator
-from .services.tts import AUDIO_FILE_EXTENSION, Pyttsx3PodcastAudioGenerator
+from .services.tts import AUDIO_FILE_EXTENSION, build_default_audio_generator
 
 TRANSLATION_FILE_SUFFIX = ".translation.txt"
 
@@ -98,14 +98,14 @@ def _add_voice_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--en-voice",
         metavar="NAME",
-        help="TTS voice name (or substring) to use for English lines.",
+        help="Local pyttsx3 voice name (or substring) to use for English lines.",
     )
     parser.add_argument(
         "--bg-voice",
         metavar="NAME",
-        help="TTS voice name (or substring) to use for Bulgarian lines. "
-        "When provided, the script is split by language and each part is "
-        "spoken with the matching voice.",
+        help="Bulgarian TTS voice to use for Bulgarian lines. Defaults to the "
+        "Google Cloud voice bg-BG-Standard-B; local pyttsx3 voice names still work "
+        "when passed explicitly.",
     )
 
 
@@ -274,7 +274,7 @@ def _run_generate_audio(args: argparse.Namespace) -> int:
     script_text = PodcastScriptBuilder().build(article, translation)
     script_path = _script_output_path(paths, article.source_url)
     script_path.write_text(script_text, encoding="utf-8")
-    audio_path = Pyttsx3PodcastAudioGenerator(
+    audio_path = build_default_audio_generator(
         voice_name=args.en_voice or None,
         bg_voice_name=args.bg_voice or None,
     ).generate(
@@ -300,7 +300,7 @@ def _run_pipeline(args: argparse.Namespace) -> int:
     plan = build_pipeline(
         paths=paths,
         use_cached_html=not args.refresh,
-        audio_generator=Pyttsx3PodcastAudioGenerator(
+        audio_generator=build_default_audio_generator(
             voice_name=args.en_voice or None,
             bg_voice_name=args.bg_voice or None,
         ),

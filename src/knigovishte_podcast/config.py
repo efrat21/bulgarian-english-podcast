@@ -66,3 +66,32 @@ class TranslationConfig:
         
         base_url = os.getenv("LANGBLY_BASE_URL", "https://api.langbly.com")
         return cls(api_key=api_key, base_url=base_url)
+
+
+@dataclass(frozen=True)
+class GoogleTTSConfig:
+    bg_voice_name: str = "bg-BG-Standard-B"
+    bg_language_code: str = "bg-BG"
+    credentials_path: Path | None = None
+
+    @classmethod
+    def from_env(cls) -> "GoogleTTSConfig":
+        voice_name = os.getenv("GOOGLE_TTS_BG_VOICE_NAME", "bg-BG-Standard-B")
+        language_code = os.getenv(
+            "GOOGLE_TTS_BG_LANGUAGE_CODE",
+            google_language_code_from_voice_name(voice_name),
+        )
+        credentials_value = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        credentials_path = Path(credentials_value) if credentials_value else None
+        return cls(
+            bg_voice_name=voice_name,
+            bg_language_code=language_code,
+            credentials_path=credentials_path,
+        )
+
+
+def google_language_code_from_voice_name(voice_name: str) -> str:
+    parts = voice_name.strip().split("-")
+    if len(parts) >= 2 and parts[0] and parts[1]:
+        return f"{parts[0]}-{parts[1]}"
+    return "bg-BG"

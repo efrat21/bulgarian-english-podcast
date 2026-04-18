@@ -172,13 +172,14 @@ class CliCommandTests(unittest.TestCase):
                 with patch("knigovishte_podcast.cli.TranslationConfig.from_env", return_value=Mock()):
                     with patch("knigovishte_podcast.cli.LangblyTranslator", return_value=translator):
                         with patch(
-                            "knigovishte_podcast.cli.Pyttsx3PodcastAudioGenerator",
+                            "knigovishte_podcast.cli.build_default_audio_generator",
                             return_value=audio_generator,
-                        ):
+                        ) as audio_factory:
                             with redirect_stdout(stdout):
                                 exit_code = main(["generate-audio", "--url", self.article.source_url, "--refresh"])
 
         self.assertEqual(exit_code, 0)
+        audio_factory.assert_called_once_with(voice_name=None, bg_voice_name=None)
         self.assertEqual(fetcher.fetch_html_calls, 1)
         self.assertTrue(expected_script_path.exists())
         self.assertTrue(expected_audio_path.exists())

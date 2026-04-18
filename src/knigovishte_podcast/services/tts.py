@@ -3,14 +3,24 @@ from __future__ import annotations
 import wave
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any
 
 import pyttsx3
 
-from ..config import ProjectPaths
+from ..config import GoogleTTSConfig, ProjectPaths
 
 AUDIO_FILE_EXTENSION = ".wav"
+DEFAULT_BG_GOOGLE_VOICE = "bg-BG-Standard-B"
 
 _BG_LINE_PREFIXES = ("Bulgarian:", "Bulgarian title:")
+
+_google_texttospeech: Any | None
+try:
+    from google.cloud import texttospeech as _google_texttospeech
+except ImportError:
+    _google_texttospeech = None
+
+google_texttospeech: Any | None = _google_texttospeech
 
 
 class PodcastAudioGenerator(ABC):
@@ -27,7 +37,7 @@ class PlaceholderPodcastAudioGenerator(PodcastAudioGenerator):
 
 
 class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
-    """Generate podcast audio locally using pyttsx3."""
+    """Generate podcast audio with local English TTS and optional Google Bulgarian TTS."""
 
     def __init__(
         self,
@@ -35,11 +45,15 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         rate: int | None = None,
         volume: float | None = None,
         bg_voice_name: str | None = None,
+        google_tts_config: GoogleTTSConfig | None = None,
+        google_client: Any | None = None,
     ) -> None:
         self.voice_name = voice_name
         self.rate = rate
         self.volume = volume
         self.bg_voice_name = bg_voice_name
+        self.google_tts_config = google_tts_config or GoogleTTSConfig.from_env()
+        self._google_client = google_client
 
     def generate(self, script_text: str, episode_slug: str) -> Path:
         if not script_text or not script_text.strip():
@@ -70,16 +84,24 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         return audio_path
 
     def _generate_single_voice(self, script_text: str, audio_path: Path) -> None:
+        self._synthesize_local_segment(script_text, audio_path, self.voice_name)
+
+    def _synthesize_local_segment(
+        self,
+        text: str,
+        audio_path: Path,
+        voice_name: str | None,
+    ) -> None:
         engine = pyttsx3.init()
         try:
             if self.rate is not None:
                 engine.setProperty("rate", self.rate)
             if self.volume is not None:
                 engine.setProperty("volume", self.volume)
-            if self.voice_name is not None:
-                self._set_voice(engine, self.voice_name)
+            if voice_name is not None:
+                self._set_voice(engine, voice_name)
 
-            engine.save_to_file(script_text, str(audio_path))
+            engine.save_to_file(text, str(audio_path))
             engine.runAndWait()
         finally:
             engine.stop()
@@ -90,19 +112,11 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         try:
             for i, (lang, text) in enumerate(segments):
                 temp_path = audio_path.parent / f"_{audio_path.stem}_part{i}{AUDIO_FILE_EXTENSION}"
-                voice_name = self.bg_voice_name if lang == "bg" else self.voice_name
-                engine = pyttsx3.init()
-                try:
-                    if self.rate is not None:
-                        engine.setProperty("rate", self.rate)
-                    if self.volume is not None:
-                        engine.setProperty("volume", self.volume)
-                    if voice_name is not None:
-                        self._set_voice(engine, voice_name)
-                    engine.save_to_file(text, str(temp_path))
-                    engine.runAndWait()
-                finally:
-                    engine.stop()
+                if lang == "bg" and _is_google_bg_voice(self.bg_voice_name):
+                    self._synthesize_google_segment(text, temp_path)
+                else:
+                    voice_name = self.bg_voice_name if lang == "bg" else self.voice_name
+                    self._synthesize_local_segment(text, temp_path, voice_name)
                 temp_files.append(temp_path)
             _concatenate_wav_files(temp_files, audio_path)
         finally:
@@ -123,6 +137,67 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
                 return
 
         raise ValueError(f"Requested voice not available: {voice_name}")
+
+    def _synthesize_google_segment(self, text: str, output_path: Path) -> None:
+        voice_name = (self.bg_voice_name or "").strip()
+        if not voice_name:
+            raise ValueError("bg_voice_name must not be blank when provided.")
+        google_api = google_texttospeech
+        if google_api is None:
+            raise RuntimeError(
+                "Google Cloud Text-to-Speech is unavailable. Install google-cloud-texttospeech "
+                "and configure GOOGLE_APPLICATION_CREDENTIALS to render Bulgarian audio."
+            )
+
+        client = self._get_google_client()
+        response = client.synthesize_speech(
+            input=google_api.SynthesisInput(text=text),
+            voice=google_api.VoiceSelectionParams(
+                language_code=self.google_tts_config.bg_language_code,
+                name=voice_name,
+            ),
+            audio_config=google_api.AudioConfig(
+                audio_encoding=google_api.AudioEncoding.LINEAR16
+            ),
+        )
+        audio_content = getattr(response, "audio_content", b"")
+        if not audio_content:
+            raise RuntimeError("Google Cloud TTS returned empty audio content.")
+        output_path.write_bytes(audio_content)
+
+    def _get_google_client(self) -> Any:
+        google_api = google_texttospeech
+        if google_api is None:
+            raise RuntimeError(
+                "Google Cloud Text-to-Speech is unavailable. Install google-cloud-texttospeech "
+                "and configure GOOGLE_APPLICATION_CREDENTIALS to render Bulgarian audio."
+            )
+        if self._google_client is None:
+            try:
+                self._google_client = google_api.TextToSpeechClient()
+            except Exception as exc:
+                raise RuntimeError(
+                    "Google Cloud Text-to-Speech is not configured for Bulgarian audio. "
+                    "Set GOOGLE_APPLICATION_CREDENTIALS to a service-account JSON file."
+                ) from exc
+        return self._google_client
+
+
+def build_default_audio_generator(
+    *,
+    voice_name: str | None = None,
+    bg_voice_name: str | None = None,
+    rate: int | None = None,
+    volume: float | None = None,
+) -> Pyttsx3PodcastAudioGenerator:
+    google_tts_config = GoogleTTSConfig.from_env()
+    return Pyttsx3PodcastAudioGenerator(
+        voice_name=voice_name,
+        rate=rate,
+        volume=volume,
+        bg_voice_name=bg_voice_name or google_tts_config.bg_voice_name,
+        google_tts_config=google_tts_config,
+    )
 
 
 def _split_script_by_language(script_text: str) -> list[tuple[str, str]]:
@@ -150,6 +225,10 @@ def _split_script_by_language(script_text: str) -> list[tuple[str, str]]:
         segments.append((current_lang, "\n".join(current_lines)))
 
     return segments
+
+
+def _is_google_bg_voice(voice_name: str | None) -> bool:
+    return bool(voice_name and voice_name.strip().lower().startswith("bg-bg-"))
 
 
 def _concatenate_wav_files(input_paths: list[Path], output_path: Path) -> None:

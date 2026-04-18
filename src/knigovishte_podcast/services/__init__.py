@@ -5,6 +5,7 @@ from .tts import (
     PlaceholderPodcastAudioGenerator,
     PodcastAudioGenerator,
     Pyttsx3PodcastAudioGenerator,
+    build_default_audio_generator,
 )
 
 __all__ = [
@@ -17,4 +18,5 @@ __all__ = [
     "PodcastAudioGenerator",
     "PodcastScriptBuilder",
     "Pyttsx3PodcastAudioGenerator",
+    "build_default_audio_generator",
 ]

@@ -13,7 +13,7 @@ Local-first Python CLI for turning a public Knigovishte article into:
 - `fetch` downloads a Knigovishte article, parses the Bulgarian title/body, and caches the HTML.
 - `translate` calls Langbly and saves ordered English sentence pairs.
 - `build-script` formats the bilingual episode script.
-- `generate-audio` renders the script to a local `.wav` file with `pyttsx3`.
+- `generate-audio` renders the script to a local `.wav` file, using local `pyttsx3` for English and Google Cloud TTS for Bulgarian by default.
 - `run` executes the full fetch → translate → script → audio pipeline.
 
 **NEW:** All commands now support filter-based article selection via `--filter` flag, allowing automatic selection of articles by length or category. Without explicit `--url`, the latest article is selected by default.
@@ -26,7 +26,8 @@ The app is already wired end to end. It is not a scaffold-only README anymore.
 - Windows-friendly local environment
 - Internet access for `fetch`, `translate`, `build-script`, `generate-audio`, and `run`
 - A valid `LANGBLY_API_KEY` for any command that translates text
-- A working local speech engine supported by `pyttsx3` for audio generation
+- A working local speech engine supported by `pyttsx3` for English audio generation
+- Google Cloud Text-to-Speech credentials for Bulgarian audio generation
 
 Install dependencies:
 
@@ -46,10 +47,23 @@ Minimal `.env` in `my-project\`:
 LANGBLY_API_KEY=your_key_here
 ```
 
-Optional override:
+Optional translation override:
 
 ```dotenv
 LANGBLY_BASE_URL=https://api.langbly.com
+```
+
+Bulgarian audio defaults to Google Cloud voice `bg-BG-Standard-B`. Configure credentials with the standard Google env var:
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\service-account.json"
+```
+
+Optional Bulgarian voice overrides:
+
+```powershell
+$env:GOOGLE_TTS_BG_VOICE_NAME="bg-BG-Standard-B"
+$env:GOOGLE_TTS_BG_LANGUAGE_CODE="bg-BG"
 ```
 
 ## Key commands
@@ -66,6 +80,7 @@ python main.py build-script --url "https://www.knigovishte.bg/vijte/1532-kolko-t
 python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --refresh
+python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --en-voice "zira" --bg-voice "bg-BG-Standard-B"
 ```
 
 ### With filter-based article selection
@@ -142,7 +157,7 @@ Knigovishte URL
    -> KnigovishteArticleFetcher
    -> LangblyTranslator
    -> PodcastScriptBuilder
-   -> Pyttsx3PodcastAudioGenerator
+   -> mixed local/Google TTS
    -> local artifacts in data\
 ```
 
@@ -153,7 +168,7 @@ Key code paths:
 - `src\knigovishte_podcast\services\fetcher.py` — Knigovishte fetch + parse
 - `src\knigovishte_podcast\services\translator.py` — Langbly API adapter
 - `src\knigovishte_podcast\services\script_builder.py` — bilingual script formatter
-- `src\knigovishte_podcast\services\tts.py` — local audio generation
+- `src\knigovishte_podcast\services\tts.py` — mixed local/Google audio generation
 - `tests\` — unittest coverage for CLI, pipeline, and service boundaries
 
 ## Current limitations
@@ -162,7 +177,8 @@ Key code paths:
 - Sentence splitting is heuristic and may mishandle Bulgarian abbreviations or unusual punctuation.
 - Translation depends on Langbly availability, credentials, and response shape.
 - Audio generation currently targets local `.wav` output only.
-- `pyttsx3` voice availability varies by machine and installed system voices.
+- English `pyttsx3` voice availability varies by machine and installed system voices.
+- Bulgarian synthesis depends on Google Cloud credentials and network access; the default configured voice is `bg-BG-Standard-B`.
 - Filter-based selection scans the Knigovishte listing page and fetches articles sequentially; performance depends on network and filter criteria.
 - Category filtering is reserved for future implementation when article metadata becomes available.
 

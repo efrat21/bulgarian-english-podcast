@@ -9,6 +9,7 @@ description = "Local-first scaffold for turning Knigovishte articles into biling
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "google-cloud-texttospeech>=2.31",
     "requests>=2.31",
     "python-dotenv>=1.0",
     "pyttsx3>=2.90",
@@ -43,5 +44,5 @@ files = ["main.py", "src"]
 pretty = true
 
 [[tool.mypy.overrides]]
-module = ["pyttsx3"]
+module = ["google.*", "pyttsx3"]
 ignore_missing_imports = true

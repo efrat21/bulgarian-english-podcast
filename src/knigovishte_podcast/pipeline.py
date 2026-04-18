@@ -7,7 +7,7 @@ from .models import PodcastPlan
 from .services.fetcher import ArticleFetcher, KnigovishteArticleFetcher
 from .services.script_builder import PodcastScriptBuilder
 from .services.translator import ArticleTranslator, LangblyTranslator
-from .services.tts import PodcastAudioGenerator, Pyttsx3PodcastAudioGenerator
+from .services.tts import PodcastAudioGenerator, build_default_audio_generator
 
 
 @dataclass
@@ -74,7 +74,7 @@ def pipeline(
         fetcher=fetcher or KnigovishteArticleFetcher(),
         translator=configured_translator,
         script_builder=script_builder or PodcastScriptBuilder(),
-        audio_generator=audio_generator or Pyttsx3PodcastAudioGenerator(),
+        audio_generator=audio_generator or build_default_audio_generator(),
         paths=project_paths,
         use_cached_html=use_cached_html,
     )

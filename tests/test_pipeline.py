@@ -174,15 +174,16 @@ class PipelineFactoryTests(unittest.TestCase):
         audio_generator = Mock()
 
         with patch("knigovishte_podcast.pipeline.KnigovishteArticleFetcher", return_value=fetcher):
-            with patch("knigovishte_podcast.pipeline.LangblyTranslator", return_value=translator) as translator_cls:
-                with patch("knigovishte_podcast.pipeline.PodcastScriptBuilder", return_value=script_builder):
-                    with patch(
-                        "knigovishte_podcast.pipeline.Pyttsx3PodcastAudioGenerator",
-                        return_value=audio_generator,
-                    ):
-                        sut = build_pipeline(paths=paths, translation_config=translation_config)
+                with patch("knigovishte_podcast.pipeline.LangblyTranslator", return_value=translator) as translator_cls:
+                    with patch("knigovishte_podcast.pipeline.PodcastScriptBuilder", return_value=script_builder):
+                        with patch(
+                            "knigovishte_podcast.pipeline.build_default_audio_generator",
+                            return_value=audio_generator,
+                        ) as audio_factory:
+                            sut = build_pipeline(paths=paths, translation_config=translation_config)
 
         translator_cls.assert_called_once_with(translation_config)
+        audio_factory.assert_called_once_with()
         self.assertIs(sut.fetcher, fetcher)
         self.assertIs(sut.translator, translator)
         self.assertIs(sut.script_builder, script_builder)
