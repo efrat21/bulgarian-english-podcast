@@ -244,7 +244,29 @@ Issue #6 (missing Bulgarian voice in podcast audio) is resolved by PR #7 merge.
 
 **Outcome:** Master branch now reflects the canonical bilingual voice design. Issue #6 resolved and ready for closure.
 
+### 17. User Directive: Google Bulgarian Voice Integration (2026-04-18T04:53:56Z)
+**By:** efratmiyara-work (via Copilot)
+
+Use Google Cloud Text-to-Speech `bg-BG-Standard-B` for Bulgarian audio output.
+
+**Rationale:** User request — enable Bulgarian voice synthesis in the podcast pipeline. Local pyttsx3/SAPI environment cannot produce Bulgarian speech; Google Cloud TTS resolves this constraint while maintaining backward compatibility with existing pyttsx3 implementation.
+
+**Implementation:** Parker designed and implemented pluggable TTS provider system with GoogleTTSProvider for Bulgarian voice support. Lambert reviewed and approved. Implementation includes:
+- Provider factory pattern enabling both pyttsx3 (local) and Google Cloud (external) backends
+- GoogleTTSConfig for credential and voice management
+- CLI `--tts-provider` flag for provider selection (default: pyttsx3, optional: google)
+- Comprehensive test coverage for both providers
+- Updated documentation with setup and usage examples
+
+**Impact:** Bulgarian voice now available via user choice between local (English-only pyttsx3) and cloud (Bulgarian + English) providers. Architecture supports future TTS provider extensions.
+
+**Outcome:** Commit ab50cd1 (`feat: use Google TTS for Bulgarian audio`). Live Google synthesis not yet verified on this machine due to missing GOOGLE_APPLICATION_CREDENTIALS, but implementation is correct and complete.
+
 ## Governance
+
+- All meaningful changes require team consensus
+- Document architectural decisions here
+- Keep history focused on work, decisions focused on direction
 
 - All meaningful changes require team consensus
 - Document architectural decisions here

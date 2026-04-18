@@ -32,3 +32,20 @@
 📌 Team update (2026-04-17T20:55:00Z): PR #7 bilingual voice routing merged to master — stateless temp-WAV architecture approved as canonical design; local commit 14d429b superseded but preserved for reference. Issue #6 resolved. Decided by Ripley
 
 📌 Team update (2026-04-17T18:39:32Z): Bulgarian voice validation confirmed — environment (pyttsx3/SAPI) exposes only English voices; no Bulgarian voice available on local machine; explicit voice-not-available errors working as designed. Verified by Parker & Lambert
+
+## Recent Session (20260418T050000Z)
+
+📌 **Google TTS Integration Implemented and Approved**
+- Designed pluggable TTS provider abstraction (local pyttsx3 + external Google Cloud)
+- Created GoogleTTSProvider with Bulgarian voice support (bg-BG-Standard-B)
+- Refactored services/tts.py with provider factory pattern
+- Added config.py for GoogleTTSConfig credential and voice management
+- Updated CLI with --tts-provider flag for provider selection
+- Comprehensive test coverage for both local and Google providers
+- Updated README.md with setup and usage documentation
+- Nested repo commit: ab50cd1 (feat: use Google TTS for Bulgarian audio)
+- Lambert review: approved — architecture sound, implementation complete, backward compatible
+
+## Team Updates
+
+📌 Team update (2026-04-18T04:53:56Z): Google TTS integration complete — Bulgarian voice now available via pluggable provider system; local pyttsx3 (English-only) remains default, Google Cloud (Bulgarian + English) opt-in via CLI flag; live verification pending GOOGLE_APPLICATION_CREDENTIALS setup. Implemented by Parker, approved by Lambert
