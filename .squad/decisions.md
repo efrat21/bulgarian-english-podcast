@@ -262,11 +262,47 @@ Use Google Cloud Text-to-Speech `bg-BG-Standard-B` for Bulgarian audio output.
 
 **Outcome:** Commit ab50cd1 (`feat: use Google TTS for Bulgarian audio`). Live Google synthesis not yet verified on this machine due to missing GOOGLE_APPLICATION_CREDENTIALS, but implementation is correct and complete.
 
-## Governance
+### 18. Ripley Decision: Bulgarian Voice Selection Final (2026-04-18T15:36:11Z)
+**Owner:** Ripley  
+**Status:** Resolved
 
-- All meaningful changes require team consensus
-- Document architectural decisions here
-- Keep history focused on work, decisions focused on direction
+**Decision:** Keep `bg-BG-Standard-B` as the default Bulgarian voice.
+
+**Evidence:**
+
+Live verification confirmed on 2026-04-18 with user's Google credentials:
+
+| Voice Tier | Bulgarian Options | Cost/1M chars | Free Tier |
+|------------|------------------|---------------|-----------|
+| Standard | `bg-BG-Standard-B` (female only) | $4 | 4M chars/month |
+| Chirp3 HD | 30 voices (15M/15F) | $30 | 1M chars/month |
+| WaveNet | **None for Bulgarian** | N/A | N/A |
+
+Key findings:
+1. **Credentials verified working** — live synthesis returned 61KB audio
+2. **Only one Standard Bulgarian voice exists** — no alternative Standard choice
+3. **7.5× price difference** — Standard is substantially cheaper
+4. **4× better free allowance** — 4M vs 1M chars/month
+5. **No WaveNet for Bulgarian** — mid-tier option does not exist
+
+**Rationale:**
+
+For a language-learning podcast:
+- Standard voice quality is adequate for comprehension practice
+- Cost efficiency matters for sustained production
+- The generous free tier (4M chars ≈ 80+ episodes/month) enables testing without charges
+
+Premium Chirp3 HD voices exist if future quality requirements justify the 7.5× cost increase. The architecture already supports voice selection via `--bg-voice` and `GOOGLE_TTS_BG_VOICE_NAME` env var.
+
+**Remaining Uncertainty:**
+
+Quality is subjective. Users sensitive to prosody may prefer a Chirp3 HD voice. The upgrade path is documented and requires no code changes — just specify the preferred voice name.
+
+**Impact:**
+
+No code changes required. Current defaults are correct.
+
+## Governance
 
 - All meaningful changes require team consensus
 - Document architectural decisions here
