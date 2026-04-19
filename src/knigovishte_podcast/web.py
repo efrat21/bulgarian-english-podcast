@@ -7,8 +7,17 @@ from flask import Flask, render_template_string, request
 from .config import ProjectPaths
 from .models import PodcastPlan
 from .pipeline import pipeline
-from .services.article_selector import KNOWN_CATEGORIES, ArticleFilter, ArticleSelector
+from .services.article_selector import ArticleFilter, ArticleSelector
 from .services.dedup import DuplicateArticleError
+
+WEB_CATEGORIES: tuple[tuple[str, str], ...] = (
+    ("obshtestvo", "Society"),
+    ("sviat", "World"),
+    ("nauka", "Science"),
+    ("kultura", "Culture"),
+    ("sport-i-zdrave", "Sports and Health"),
+    ("pishat-ni", "Letters"),
+)
 
 PAGE_TEMPLATE = """
 <!doctype html>
@@ -28,12 +37,14 @@ PAGE_TEMPLATE = """
       code { word-break: break-all; }
       ul { padding-left: 1.25rem; }
       .filters { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+      .status { margin-top: 1rem; font-weight: 600; }
+      .status[hidden] { display: none; }
     </style>
   </head>
   <body>
     <h1>Knigovishte Podcast Builder</h1>
     <p>Run the existing article → translation → script → audio pipeline locally from your browser.</p>
-    <form method="post">
+    <form id="podcast-form" method="post">
       <div>
         <label for="url">Article URL (optional)</label>
         <input id="url" name="url" type="text" value="{{ form.url }}" placeholder="Leave blank to use the latest Knigovishte article">
@@ -61,22 +72,24 @@ PAGE_TEMPLATE = """
         <input name="refresh" type="checkbox" {% if form.refresh %}checked{% endif %}>
         Ignore cached HTML and fetch the article again
       </label>
-      <button type="submit">Generate podcast artifacts</button>
+      <button id="submit-button" type="submit">Generate podcast artifacts</button>
     </form>
+    <p id="working-message" class="status" hidden>Working...</p>
 
     <p><strong>Output folder:</strong> <code>{{ output_folder }}</code></p>
-    <p><a href="{{ output_folder_uri }}">Open output folder</a></p>
+    <p><a href="{{ output_folder_uri }}">Output folder</a></p>
 
     {% if result %}
       <section class="panel success">
         <h2>{{ result.heading }}</h2>
+        <p><strong>Your episode is ready.</strong></p>
         <p>{{ result.message }}</p>
         <ul>
           <li><strong>Article URL:</strong> <a href="{{ result.article_url }}">{{ result.article_url }}</a></li>
           {% if result.fetched_title %}<li><strong>Bulgarian title:</strong> {{ result.fetched_title }}</li>{% endif %}
           {% if result.translated_title %}<li><strong>English title:</strong> {{ result.translated_title }}</li>{% endif %}
           {% for artifact in result.artifacts %}
-            <li><strong>{{ artifact.label }}:</strong> <a href="{{ artifact.uri }}">{{ artifact.path }}</a></li>
+            <li><strong>{{ artifact.label }}:</strong> <code>{{ artifact.path }}</code></li>
           {% endfor %}
         </ul>
       </section>
@@ -88,6 +101,19 @@ PAGE_TEMPLATE = """
         <p>{{ error }}</p>
       </section>
     {% endif %}
+    <script>
+      const form = document.getElementById("podcast-form");
+      const workingMessage = document.getElementById("working-message");
+      const submitButton = document.getElementById("submit-button");
+
+      if (form && workingMessage && submitButton) {
+        form.addEventListener("submit", () => {
+          workingMessage.hidden = false;
+          submitButton.disabled = true;
+          submitButton.textContent = "Working...";
+        });
+      }
+    </script>
   </body>
 </html>
 """.strip()
@@ -145,7 +171,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
             },
             result=result,
             error=error,
-            categories=KNOWN_CATEGORIES,
+            categories=WEB_CATEGORIES,
             output_folder=str(project_paths.data),
             output_folder_uri=_path_uri(project_paths.data),
         )
@@ -247,7 +273,6 @@ def _artifact(label: str, path: Path) -> dict[str, str]:
     return {
         "label": label,
         "path": str(resolved_path),
-        "uri": _path_uri(resolved_path),
     }
 
 

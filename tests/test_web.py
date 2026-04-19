@@ -55,6 +55,10 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("Article URL (optional)", page)
         self.assertIn("Minimum length (sentences)", page)
         self.assertIn("Category", page)
+        self.assertIn("Working...", page)
+        self.assertIn(">Output folder<", page)
+        self.assertIn("Society", page)
+        self.assertNotIn("Общество", page)
         self.assertIn(str(self.paths.data), page)
 
     def test_post_runs_pipeline_for_explicit_url(self) -> None:
@@ -70,8 +74,10 @@ class WebUiTests(unittest.TestCase):
         mock_pipeline.run.assert_called_once_with(self.article.source_url)
         page = response.get_data(as_text=True)
         self.assertIn("Podcast artifacts generated", page)
+        self.assertIn("Your episode is ready.", page)
         self.assertIn("Used the URL you entered.", page)
         self.assertIn(str(self.plan.audio_path.resolve()), page)
+        self.assertNotIn(f'href="{self.plan.audio_path.resolve().as_uri()}"', page)
 
     def test_post_uses_latest_article_when_url_is_blank(self) -> None:
         mock_pipeline = Mock()
@@ -140,4 +146,6 @@ class WebUiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         page = response.get_data(as_text=True)
         self.assertIn("Existing audio reused", page)
+        self.assertIn("Your episode is ready.", page)
         self.assertIn(str(existing_audio_path.resolve()), page)
+        self.assertNotIn(f'href="{existing_audio_path.resolve().as_uri()}"', page)
