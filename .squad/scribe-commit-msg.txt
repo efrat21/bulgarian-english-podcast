@@ -1,0 +1,29 @@
+squad: Record prefix removal force-push resolution
+
+SESSION: Prefix removal force-push resolution (2026-04-19T133500Z)
+
+Scribe processes:
+1. Session log: 2026-04-19T133500Z-prefix-removal-force-push-resolution.md
+   - Bishop implemented prefix removal (commit a48e3f0)
+   - Lambert approved implementation (78 tests pass, full integration verified)
+   - User authorized remote history rewrite
+   - Bishop force-pushed nested repo (origin/master rewritten 3d1ebce → a48e3f0)
+
+2. Orchestration logs:
+   - 2026-04-19T133500Z-bishop-force-push.md (publication & verification)
+   - 2026-04-19T133500Z-lambert-prefix-removal-review.md (review & approval)
+
+3. Decision inbox merge:
+   - bishop-force-push-nested-repo.md → decisions.md (section ### 25)
+   - Deleted merged inbox file
+
+4. Cross-agent history updates:
+   - Bishop history: Added final update on force-push completion
+   - Lambert history: Added final update on publication success
+
+DECISION: Record force-push as Decision #25 in decisions.md
+- Approved by: efratmiyara-work
+- Executed: Successfully aligned origin/master with local a48e3f0
+- Status: Complete & verified
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>

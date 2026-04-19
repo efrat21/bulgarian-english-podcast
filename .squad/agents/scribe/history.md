@@ -18,6 +18,7 @@ Agent Scribe initialized and ready for work.
 📌 Knigovishte fetcher decision consolidated (2026-04-13T180002Z)
 📌 Squad health check performed on 2026-04-16 (Coordinator direct); drift detected in template files
 📌 Squad repair completed on 2026-04-17 (Template restoration + Git remote wiring); decision inbox merged (7 entries)
+📌 Prefix removal session (2026-04-19T133500Z): Consolidated Bishop implementation + Lambert review + blocker documentation. Merged 5 inbox entries into decisions.md (decisions #10 and #11). Updated agent histories. Prepared .squad/ for commit.
 
 ## Work Completed
 
@@ -38,6 +39,14 @@ Agent Scribe initialized and ready for work.
   - Merged decision inbox (7 entries including git remote and langbly translator directives)
   - Deleted all merged inbox files
   - Updated decisions.md with two new decisions (git remote + langbly translator)
+- Completed Prefix removal publication session (2026-04-19):
+  - Created 3 orchestration logs (Bishop implementation, Lambert review, publish blocker documentation)
+  - Created session log (facts-only record of implementation, review, and blocker)
+  - Merged 5 inbox entries: 2 decisions (remove-prefixes, force-push-publish) + 2 reviews (prefix-removal, script-builder) + 1 prior publish approval (#8/#9)
+  - Updated decisions.md with decisions #10 (Remove prefixes) and #11 (Publish force-push)
+  - Updated agent histories for Bishop, Lambert, and Scribe with team update markers
+  - Deleted all merged inbox files from decisions/inbox/
+  - Staged all .squad/ changes for commit
 
 ## Learnings
 

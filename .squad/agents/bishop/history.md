@@ -24,3 +24,7 @@
 
 📌 Team update (2026-04-19T091835Z): Issue #8 completed. Durable artifact deduplication implemented via SHA-256 content hash + manifest at `my-project\data\audio\manifest.json`. Pipeline now idempotent; commit 93d31f9. Decided by Bishop
 
+📌 Team update (2026-04-19T133000Z): Sentence prefix removal completed (commit a48e3f0) — removes "English:" and "Bulgarian:" from script body lines while preserving title markers and backward compatibility. Implementation tested (78 tests green), code reviewed and approved by Lambert. Publication BLOCKED by history divergence (local a48e3f0 vs remote 3d1ebce, no common ancestor). Requires Coordinator strategy for alignment. Documented by Scribe
+
+📌 Team update (2026-04-19T133500Z): Force-push authorized and executed — nested repo remote history rewritten from 3d1ebce → a48e3f0. Commit a48e3f0 (Remove sentence prefixes from podcast scripts) now published to origin/master. Local and remote aligned. Decision #25 recorded. Decided by efratmiyara-work
+

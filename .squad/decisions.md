@@ -403,6 +403,79 @@ No code changes required. Current defaults are correct.
 
 **Frontend:** Bishop handles v1 (simple vanilla JS + HTML). Defer to specialist if UI complexity grows.
 
+---
+
+### 10. Remove Sentence Language Prefixes from Podcast Scripts (2026-04-19T13:15:00Z)
+
+**Status:** ✅ IMPLEMENTED & APPROVED
+**Author:** Bishop (Backend Dev)
+**Reviewer:** Lambert (Tester)
+**Commit:** a48e3f0 ("Remove sentence prefixes from podcast scripts")
+
+**Decision:**
+Remove `"English: "` and `"Bulgarian: "` language tags from sentence lines emitted by `PodcastScriptBuilder`. Keep title-line prefixes (`"English title:"` / `"Bulgarian title:"`) to preserve script structure markers.
+
+**Rationale:**
+- User explicitly requested cleaner sentence lines without spoken language labels
+- Improves readability and naturalness of podcast narration
+- Audio generation still needs language boundaries, so `tts.py` state machine now alternates English/Bulgarian for unprefixed body lines
+- Backward compatibility preserved: older prefixed scripts still handled via `_EN_LINE_PREFIXES` / `_BG_LINE_PREFIXES`
+
+**Implementation Details:**
+- `script_builder.py`: Removed prefix literals from body line formatting
+- `tts.py`: Rewrote `_split_script_by_language` as state machine to alternate language segments for unprefixed content
+- Tests updated: `test_script_builder.py`, `test_cli.py`, `test_tts.py` all pass (78 tests, no regressions)
+
+**Review Evidence (Lambert):**
+- ✅ All 78 tests pass (full suite green)
+- ✅ Full end-to-end integration: 2-sentence script traced through `PodcastScriptBuilder` → `_split_script_by_language`, all 13 segments verified
+- ✅ No sentence lines start with `English:` or `Bulgarian:`
+- ✅ Backward compatibility confirmed for legacy prefixed format
+
+**Non-Blocking Observations:**
+1. No full-script integration test in suite (existing tests use 2–5 line snippets). Recommend adding in future pass.
+2. Control-line string equality risk: if article content matches "Let's hear that again." or "Сега ще го повторим." exactly, parser could misclassify (low probability).
+3. Blank lines inherit preceding language segment (harmless for TTS, worth awareness for future inspections).
+
+---
+
+### 11. Publish Prefix Removal: Force-Push Nested Repo to Align Origin (2026-04-20T00:00:00Z)
+
+**Status:** ✅ PUBLISHED
+**Author:** Bishop (Backend Dev)
+**Approval:** User-directed (efratmiyara-work)
+**Commit:** a48e3f0 ("Remove sentence prefixes from podcast scripts")
+
+**Original Problem:**
+The nested repository (`my-project`) had diverged from its remote:
+- Local `master` HEAD: a48e3f0 (approved, tested, ready to ship)
+- `origin/master`: 3d1ebce (separate history, no common ancestor)
+- Divergence: 18 local commits ahead, 35 remote commits behind
+- Standard `git push` impossible without history rewrite
+
+**Decision:**
+User approved force-push to rewrite remote history and align `origin/master` with local `master` at a48e3f0.
+
+**Execution:**
+```bash
+cd my-project/
+git push --force origin master
+```
+
+✅ **Force-push completed successfully:**
+- Rewrote `origin/master` from 3d1ebce → a48e3f0
+- Packed 61 objects, 16.83 KiB transferred
+- Post-push verification: local and remote now aligned at a48e3f0
+- Local working tree remains clean
+
+**Result:**
+- ✅ Nested repo master branch published to origin/master
+- ✅ Local and remote in sync at a48e3f0
+- ✅ Root repo unaffected
+- ✅ Prefix removal feature now live on GitHub
+
+**Note:** This decision overrides the initial "no history rewrite" constraint per explicit user approval to resolve the publication blocker.
+
 **Testing:** Lambert (Tester) will write test cases for API endpoints once Bishop defines schema.
 
 ---
@@ -554,6 +627,60 @@ The known failure in `tests/test_script_builder.py` caused by an unstaged change
 
 **Conclusion:**
 The implementation is sound, fully tested, and correctly integrates with the existing pipeline. Web UI is secure and performant. Approved for merge.
+
+### 25. Bishop: Force-Push Nested App Repo to Origin/Master (2026-04-19T13:35:00Z)
+
+**Decision Date:** 2026-04-19  
+**Approved By:** efratmiyara-work  
+**Status:** EXECUTED
+
+## Problem
+
+The nested repository (`my-project/`) had diverged from its remote:
+- **Local master:** a48e3f0 (Remove sentence prefixes from podcast scripts)
+- **origin/master:** 3d1ebce (Review: approve script builder repeat prompt fix)
+- **Divergence:** 18 local commits ahead, 35 remote commits behind
+
+The local state (a48e3f0) represents the approved, stable version that needed to be published to origin.
+
+## Decision
+
+**Force-push local master to origin/master** to align the remote with the approved local state.
+
+```bash
+cd my-project/
+git push --force origin master
+```
+
+## Rationale
+
+1. **User Approval:** Explicit approval provided to rewrite remote history
+2. **Clean State:** Local working tree is clean, no uncommitted changes
+3. **Correct Target:** Local master at a48e3f0 represents approved work
+4. **Isolated Operation:** Only affects the nested repo; root repo untouched
+
+## Execution
+
+✅ **Force-push completed successfully:**
+- Rewrote origin/master from 3d1ebce → a48e3f0
+- Packed 61 objects, 16.83 KiB transferred
+- Post-push verification: local and remote now aligned at a48e3f0
+
+```
+On branch master
+Your branch is up to date with 'origin/master'.
+```
+
+## Impact
+
+- **Remote:** origin/master now points to commit a48e3f0
+- **Local:** Remains at a48e3f0 (unchanged)
+- **Alignment:** ✅ Local and remote are now in sync
+- **Root repo:** Unaffected
+
+## Next Steps
+
+None required. The nested repo is now published with its approved state.
 
 ## Governance
 
