@@ -814,6 +814,44 @@ Treat Windows COM initialization as part of the local `pyttsx3` boundary, not as
 
 ---
 
+---
+
+### 29. Lambert Review: Issue #11 — Web UI Messaging and Links (2026-04-19)
+
+**Reviewer:** Lambert (Tester)  
+**Author:** Bishop  
+**Commit:** 116e9d9  
+**Verdict:** ✅ APPROVED
+
+#### What Was Claimed
+
+1. Category dropdown shows English labels instead of Bulgarian.
+2. "Working..." feedback appears while the pipeline runs.
+3. Success panel confirms "Your episode is ready."
+4. Individual artifact links removed; only the output-folder link remains.
+5. README and tests updated to match.
+
+#### Evidence
+
+| Claim | Verified | How |
+|-------|----------|-----|
+| English category labels | ✅ | `WEB_CATEGORIES` maps slugs to English names; slugs match `KNOWN_CATEGORIES` exactly. Test asserts "Society" present, "Общество" absent. |
+| Working feedback | ✅ | Hidden `<p>` with JS listener on form submit; button disables and shows "Working...". Test asserts "Working..." in GET response markup. |
+| Episode-ready confirmation | ✅ | Both success path and `DuplicateArticleError` path now show "Your episode is ready." Tests assert this string in both branches. |
+| Artifact links removed | ✅ | `_artifact()` no longer returns `uri`; template renders `<code>` not `<a>`. Tests assert `href` for artifact paths is absent. |
+| Output-folder link retained | ✅ | `<a href="{{ output_folder_uri }}">Output folder</a>` still present in template; link text shortened from "Open output folder". |
+| README updated | ✅ | Docs describe working message and single output-folder link. |
+| Tests updated | ✅ | All 85 tests pass (0 failures, 0 errors). New assertions cover every claimed behavior. |
+
+#### Observations (Non-Blocking)
+
+- **Duplicate constant:** `WEB_CATEGORIES` in `web.py` duplicates the slug list from `KNOWN_CATEGORIES` in `article_selector.py`. If the site adds a category, both must be updated independently. A future cleanup could derive `WEB_CATEGORIES` from `KNOWN_CATEGORIES` with an English-label mapping, but this is low-risk today since the site's categories are stable.
+- **JS-only feedback:** The "Working..." indicator relies entirely on client-side JS. If JS is disabled the user sees no progress hint. Acceptable for a local-only tool.
+
+#### Decision
+
+Implementation matches all claims. Tests are comprehensive and pass cleanly. Approved for publication.
+
 ## Governance
 
 - All meaningful changes require team consensus
