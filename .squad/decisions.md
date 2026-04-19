@@ -438,6 +438,31 @@ No code changes required. Current defaults are correct.
 | #8 | Bishop | Assigned; awaiting pickup | `squad`, `squad:bishop` |
 | #9 | Bishop | Architecture decided; ready for pickup | `squad:bishop` |
 
+### 21. Bishop Decision: Issue #8 Article Dedup — Implementation Complete (2026-04-19T091835Z)
+**Owner:** Bishop  
+**Status:** Implemented and merged
+
+**Decision:** Store a durable manifest at `my-project\data\audio\manifest.json` keyed by SHA-256 hash of normalized Bulgarian article title plus sentence content.
+
+**Implementation:**
+- Before generating audio, compute SHA-256 hash of article content (title + sentences)
+- Check manifest for previously processed articles
+- If hash exists and audio file exists, skip generation and report existing path
+- Otherwise, run normal fetch → translate → script → audio flow and record new hash in manifest
+- Manifest persists to disk (committed artifact storage) to survive CLI runs
+
+**Why This Approach:**
+- **Durable:** Manifest survives future CLI runs (lives in committed artifact storage, not process memory)
+- **Content-aware:** Hashing article content catches republished/re-linked articles that change URL slug
+- **Boundary-clean:** Orchestration stays inside pipeline layer; no CLI changes needed (just skip reporting)
+
+**Behavior:**
+- New articles run through normal pipeline
+- Repeated articles with same content hash skip generation and report existing audio path
+- Pipeline correctly reports whether generation was skipped or newly created
+
+**Outcome:** Commit `93d31f9` ("fix: prevent duplicate audio generation (#8)"). Pipeline now idempotent with respect to article content. Issue #8 resolved.
+
 ## Governance
 
 - All meaningful changes require team consensus

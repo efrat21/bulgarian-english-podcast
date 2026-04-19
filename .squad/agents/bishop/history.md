@@ -20,3 +20,5 @@
 
 📌 Team update (2026-04-19T120000Z): Issue #8 (artifact deduplication) assigned to Bishop. Issue #9 (local UI) flagged for architecture clarification. Triage complete. Decided by Ripley
 
+📌 Team update (2026-04-19T091835Z): Issue #8 completed. Durable artifact deduplication implemented via SHA-256 content hash + manifest at `my-project\data\audio\manifest.json`. Pipeline now idempotent; commit 93d31f9. Decided by Bishop
+

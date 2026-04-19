@@ -119,6 +119,9 @@
 
 ## Recent Session (20260417T173826Z)
 
+📌 Team update (2026-04-19T091835Z): Issue #8 (artifact deduplication) completed by Bishop. Durable manifest-based dedup implemented; commit 93d31f9. Issue #9 (local web UI) architecture decided (Flask API + vanilla JS); ready for Bishop implementation. Both decisions merged to decisions.md by Scribe. Session complete.
+
+
 📌 **Issue #6 Triage and Routing (Bulgarian Voice Bug)**
 - Assessed critical production issue: missing Bulgarian voice in bilingual podcast output
 - Root cause identified: single-voice audio generation path in TTS
