@@ -143,6 +143,26 @@
       "priority": "high",
       "dependencies": ["pipeline-integration", "cli-main-entry"],
       "notes": "Completed for issue #9. Added a Flask-powered local UI plus a CLI web command, kept latest-article fallback when the URL field is blank, and documented/tested the flow."
+    },
+    {
+      "id": "local-rss-delivery",
+      "title": "Local Wi-Fi RSS feed for Podcast Addict",
+      "description": "Add a local delivery path that converts generated audio to a Podcast Addict-friendly format, writes podcast.xml, and serves the feed plus episode files over the local network so Android devices can subscribe directly.",
+      "owner": "Bishop",
+      "status": "in_progress",
+      "priority": "high",
+      "dependencies": ["tts-impl", "deployment-strategy"],
+      "notes": "Planned on 2026-04-19. Agreed v1 path is a private local Wi-Fi RSS feed first, not hosted publishing or Syncthing. Work started by Ralph/Bishop on 2026-04-19."
+    },
+    {
+      "id": "google-english-voice",
+      "title": "Use Google Cloud English-US Standard voice",
+      "description": "Issue #14: Evaluate and integrate a Google Cloud Text-to-Speech English-US Standard voice option. Research available voices in the standard pricing tier, document selection, and add voice parameter support to CLI.",
+      "owner": "Parker",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": ["local-rss-delivery"],
+      "notes": "Triaged 2026-04-19. Queued after local-rss-delivery. Current English voice (pyttsx3) is functional; this is an enhancement/alternative. Similar scope to issue #6 (Bulgarian voice selection). Parker to evaluate Google Cloud en-US Standard options."
     }
   ]
 }
