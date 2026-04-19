@@ -149,20 +149,20 @@
       "title": "Local Wi-Fi RSS feed for Podcast Addict",
       "description": "Add a local delivery path that converts generated audio to a Podcast Addict-friendly format, writes podcast.xml, and serves the feed plus episode files over the local network so Android devices can subscribe directly.",
       "owner": "Bishop",
-      "status": "in_progress",
+      "status": "done",
       "priority": "high",
       "dependencies": ["tts-impl", "deployment-strategy"],
-      "notes": "Planned on 2026-04-19. Agreed v1 path is a private local Wi-Fi RSS feed first, not hosted publishing or Syncthing. Work started by Ralph/Bishop on 2026-04-19."
+      "notes": "Completed on 2026-04-19. Added local-rss-delivery CLI, data/rss staging, podcast.xml generation, stdlib LAN serving, README workflow docs, and unittest coverage. V1 serves staged .wav artifacts directly on trusted local Wi-Fi."
     },
     {
       "id": "google-english-voice",
       "title": "Use Google Cloud English-US Standard voice",
       "description": "Issue #14: Evaluate and integrate a Google Cloud Text-to-Speech English-US Standard voice option. Research available voices in the standard pricing tier, document selection, and add voice parameter support to CLI.",
       "owner": "Parker",
-      "status": "pending",
+      "status": "done",
       "priority": "medium",
       "dependencies": ["local-rss-delivery"],
-      "notes": "Triaged 2026-04-19. Queued after local-rss-delivery. Current English voice (pyttsx3) is functional; this is an enhancement/alternative. Similar scope to issue #6 (Bulgarian voice selection). Parker to evaluate Google Cloud en-US Standard options."
+      "notes": "Completed 2026-04-19 for issue #14. Reviewed Google Cloud en-US Standard voices A-J and selected en-US-Standard-F for a clear neutral female read at standard-tier pricing. Default audio flow now routes English and Bulgarian Google voice names through the same Google TTS path, with CLI/config overrides plus unittest coverage."
     }
   ]
 }

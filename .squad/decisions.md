@@ -924,3 +924,112 @@ On non-Windows (ctypes.windll absent) the context manager is a no-op.
 - **Per-segment COM init in bilingual mode:** Each local segment enters/exits
   the COM context independently.  COM init is ref-counted so this is correct,
   just mildly redundant.  Not worth changing now.
+
+### 27. User Decision: Podcast Addict Delivery Path (2026-04-19T12:11:30Z)
+**Source:** User agreement (via Copilot)
+
+For Android delivery, the first implementation path is:
+- **Primary path:** private local Wi-Fi RSS feed for Podcast Addict
+- **Episode format target:** convert generated local audio to a podcast-friendly format before feed publication
+- **Feed shape:** generate `podcast.xml` plus serve episode files over the local network
+- **Deferred options:** hosted private feed and Syncthing stay as later alternatives, not the first build target
+
+**Rationale:** This keeps the first delivery slice private, cheap, and aligned with how Podcast Addict naturally consumes podcast episodes, while avoiding third-party hosting for the first release path.
+
+### 28. Bishop Decision: Local RSS Delivery Stages Existing Audio Under `data\rss\` (2026-04-19)
+
+For the first Podcast Addict delivery slice, keep the workflow explicit and local:
+
+- Rebuild a dedicated delivery directory at `my-project\data\rss\`
+- Copy the currently available episode files into `data\rss\episodes\`
+- Generate `data\rss\podcast.xml` from those staged artifacts
+- Serve only `data\rss\` over the LAN with a small stdlib HTTP server
+- Reuse the current `.wav` audio output directly instead of adding an ffmpeg/transcoder dependency in v1
+
+**Rationale:**
+
+- This keeps feed generation restartable from the existing artifact layout without rerunning translation or TTS.
+- Serving a dedicated delivery folder is safer and clearer than exposing the entire `data\` tree.
+- The current generator already produces `.wav` reliably; staging that known-good output is the smallest dependable path to a subscribable private feed.
+
+**Affected paths:** `my-project\src\knigovishte_podcast\services\rss.py`, `my-project\src\knigovishte_podcast\cli.py`, `my-project\data\rss\*`, `my-project\tests\test_rss.py`
+
+### 29. Lambert Review: Issue #11 Follow-Up — Simplify Web UI Success Message (2026-04-19)
+
+**Reviewer:** Lambert (Tester)
+**Author:** Bishop
+**Commit:** bdb149c (`Simplify web UI success message`)
+**Prior approval:** Decision #29 approved commit 116e9d9 (first pass)
+**Verdict:** ✅ APPROVED
+
+#### What Was Claimed
+
+After a successful or reused run, the web UI now shows only "Your episode is ready." while keeping the single output-folder link. The detailed heading, selection message, article URL, titles, and artifact paths have been removed from the rendered page.
+
+#### Evidence
+
+| Claim | Verified | How |
+|-------|----------|-----|
+| Success panel shows only "Your episode is ready." | ✅ | Template lines 82-86 render only `<p><strong>Your episode is ready.</strong></p>` inside `{% if result %}`. No other result fields are referenced. |
+| Duplicate-article (reuse) path shows same message | ✅ | `DuplicateArticleError` handler sets `result` to a truthy dict; same template branch fires. Test `test_post_reports_existing_audio_for_duplicate_article` asserts the ready message is present and old "Existing audio reused" heading is absent. |
+| Output-folder link preserved | ✅ | Lines 79-80 render the folder path and link unconditionally (outside the result block). |
+| Old detail fields not shown | ✅ | Tests assert `assertNotIn` for: "Podcast artifacts generated", "Used the URL you entered.", "No URL was provided…", "Existing audio reused", "Article URL:", and resolved artifact paths. |
+| README accurate | ✅ | Docs now say the page "only shows `Your episode is ready.`" |
+| No regressions | ✅ | All 85 tests pass (0 failures, 0 errors). |
+
+#### Observations (Non-Blocking)
+
+1. **Dead code in `web.py`:** `_build_success_result()`, `_artifact()`, and the `DuplicateArticleError` handler still construct full result dicts with `heading`, `message`, `article_url`, `fetched_title`, `translated_title`, and `artifacts` fields. The template no longer references any of these — it only checks truthiness of `result`. Similarly, `_resolve_article_url()` still returns `selection_message` strings that are never displayed. This is harmless today but adds confusion for the next reader. A future cleanup could simplify these to return a bare truthy sentinel.
+
+2. **Inline `<ul>` CSS rule orphaned:** The `<style>` block still defines `ul { padding-left: 1.25rem; }` — the only `<ul>` was the artifact list that was just removed. Cosmetic only.
+
+#### Decision
+
+The claimed behavior is fully substantiated by template changes, test assertions (both positive and negative), and README updates. All tests pass. Approved for publication.
+
+### 30. Ripley Decision: Issue #14 Triage — Google English Voice (2026-04-19T12:30:00Z)
+
+**Owner:** Ripley  
+**Issue:** #14 — "new english voice"  
+**Status:** Triaged and routed
+
+## Analysis
+
+**Request:** Use a new English-US voice from Google, in the pricing range of standard.
+
+**Domain Assessment:** Audio/TTS voice selection → **Parker (Audio Dev)**
+
+**Current State:**
+- pyttsx3 (local, English-only) is the default English TTS provider
+- Google Cloud TTS integration exists (Decision #17, Bulgarian voice `bg-BG-Standard-B`)
+- Bilingual voice routing system in place (PR #7, commit 7f5ddf3)
+- Current top priority: `local-rss-delivery` (high, in progress)
+
+## Decision
+
+**Assignment:** Parker (Audio Dev)
+
+**Scope:** Research Google Cloud Text-to-Speech English-US Standard voices. Document available options, select a Standard-tier English voice, and add voice parameter support to the CLI (similar to Bulgarian voice selection in issue #6).
+
+**Priority:** Medium
+
+**Sequencing:** Queue after `local-rss-delivery` completes. This is an enhancement/alternative; current pyttsx3 English is functional and non-blocking.
+
+**Related Work:** 
+- Decision #17 (Google Cloud TTS integration for Bulgarian)
+- Decision #18 (Bulgarian voice selection—`bg-BG-Standard-B`)
+- PR #7 (bilingual voice routing architecture)
+
+## Rationale
+
+1. **Correct owner:** Parker owns TTS and audio voice decisions per routing table
+2. **Not blocking:** Enhancement to English voice quality; current voice works
+3. **Priority maintained:** `local-rss-delivery` remains top task
+4. **Architecture ready:** Provider/voice selection system already supports Google Cloud; adding an English voice is straightforward
+5. **Similar scope to #6:** Same investigation/implementation pattern (voice tier, availability, cost, CLI integration)
+
+## Next Steps
+
+1. Scribe merges this decision into active decisions.md
+2. Taskboard entry `google-english-voice` created with Parker as owner
+3. Parker to pick up after `local-rss-delivery` status changes to `done`

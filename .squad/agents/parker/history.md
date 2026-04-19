@@ -11,6 +11,9 @@
 - `my-project\\src\\knigovishte_podcast\\services\\tts.py` is the local pyttsx3 boundary; it now standardizes output on `.wav`, clears stale files before synthesis, and raises if a requested voice is unavailable.
 - `my-project\\tests\\test_tts.py` covers the TTS contract: empty-input validation, voice selection behavior, and proof that a fresh audio file was actually created.
 - `my-project\\src\\knigovishte_podcast\\cli.py` plan output must match the real TTS artifact path so downstream pipeline work can trust `data\\audio\\*.wav`.
+- Google voice routing now lives in `my-project\\src\\knigovishte_podcast\\services\\tts.py`: `en-US-*` and `bg-BG-*` voice names are treated as Google Cloud voices, while explicit local pyttsx3 substrings still route locally.
+- `my-project\\src\\knigovishte_podcast\\config.py` now carries both English and Bulgarian Google TTS defaults, sourced from `GOOGLE_TTS_EN_*` and `GOOGLE_TTS_BG_*` environment variables.
+- For issue #14, Parker selected `en-US-Standard-F` from the Google Cloud en-US Standard tier because it keeps standard-tier pricing and gives a clear neutral podcast read that pairs well with `bg-BG-Standard-B`.
 
 ## Recent Session (20260417T173826Z)
 
@@ -76,3 +79,6 @@
 📌 Team update (20260419T113723Z): Issue #12 assigned and active — Windows COM initialization bug in pyttsx3; fix at TTS boundary. Decision documented: COM init/cleanup inside services/tts.py protects all callers (CLI, web, filtering, background). Routed by Ripley, working by Parker
 
 📌 Team update (20260419T144115Z): Issue #12 complete — Windows COM initialization context manager deployed at TTS boundary; local pyttsx3 protected on Flask request threads; tests passing; PR #13 merged. Implemented by Parker, logged by Scribe.
+
+📌 Team update (2026-04-19T12:26:24Z): Issue #14 ("new english voice") queued for Parker — GitHub enhancement request to add Google Cloud Text-to-Speech English-US Standard voice option. Scope: research available voices, select Standard-tier option, add CLI voice parameter support (similar to issue #6). Priority: Medium. Sequencing: Start after `local-rss-delivery` completion. Decision #30 recorded. Routed by Ripley
+

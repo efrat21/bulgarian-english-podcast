@@ -65,6 +65,10 @@
 - Commit a53c84e ("Add local web UI for #9")
 - Known preserved state: Unstaged change in src/knigovishte_podcast/services/script_builder.py (unrelated unittest failure) documented for future targeted repair
 
+📌 Team update (2026-04-19T12:26:24Z): `local-rss-delivery` implementation reviewed and approved — Bishop's RSS service module aligns with staged artifact strategy, LAN delivery boundary correct, test coverage comprehensive. Decision #28 recorded. APPROVED FOR PUBLICATION. Verified by Ripley
+
+📌 Team update (2026-04-19T12:26:24Z): Issue #14 triage complete — GitHub enhancement request #14 ("new english voice") assigned to Parker (Audio Dev). Scope: research Google Cloud Text-to-Speech English-US Standard voices and add voice parameter support to CLI. Priority: Medium. Sequencing: Queue after `local-rss-delivery` completion. Decision #30 recorded. Decided by Ripley
+
 
 ## Recent Session (2026-04-13T180001Z)
 

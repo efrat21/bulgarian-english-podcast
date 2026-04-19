@@ -10,6 +10,9 @@
 - Testing will need to cover the full fetch → translate → audio pipeline, not just individual functions.
 - The coverage gap was mostly execution-path, not missing files: translator tests existed but were not discoverable by unittest, so confidence improved by converting them into runnable suite coverage and adding failure-path checks for CLI and pipeline fallbacks.
 - Environment validation: Bulgarian TTS voice generation is not supported on this machine; SAPI backend exposes English voices only; voice-not-available error correctly raised on explicit Bulgarian requests.
+- Local Wi-Fi RSS delivery is wired through `my-project\src\knigovishte_podcast\services\rss.py` and exposed from the `local-rss-delivery` CLI entrypoint in `my-project\src\knigovishte_podcast\cli.py`.
+- The delivery path publishes `data\rss\podcast.xml` plus copied episode enclosures under `data\rss\episodes\`; supported podcast-friendly enclosure formats are `.wav`, `.mp3`, `.m4a`, and `.aac`.
+- Regression coverage for RSS feed generation, LAN file serving, CLI no-serve/serve paths, and IP-detection fallbacks now lives in `my-project\tests\test_rss.py` and `my-project\tests\test_cli.py`.
 
 ## Recent Session (20260417T183932Z)
 
@@ -49,4 +52,6 @@
 📌 Team update (2026-04-19T133500Z): Force-push resolution complete — commit a48e3f0 (Remove sentence prefixes from podcast scripts) published to origin/master. User explicitly authorized remote history rewrite. Local and remote now aligned at a48e3f0. Publication successful. Decision #25 recorded in decisions.md. Coordinated by Scribe
 
 📌 Team update (20260419T115408Z): Issue #12 Windows COM initialization in TTS reviewed and approved (PR #13, commit 5543082). Context manager wraps all local TTS calls with CoInitialize/CoUninitialize handling; HRESULT edge cases properly managed (S_FALSE, RPC_E_CHANGED_MODE, failures). Cross-platform safe (no-op on non-Windows). All 85 tests pass. Minor observations: missing tests for COM failure path and non-Windows no-op branch (low risk). APPROVED FOR PUBLICATION. Decided by Lambert
+
+📌 Team update (2026-04-19T12:26:25Z): Regression testing for `local-rss-delivery` complete — RSS feed generation with multiple formats (`.wav`, `.mp3`, `.m4a`, `.aac`), LAN serving with IP detection fallback, CLI command paths validated. All regression tests pass; no regressions detected. Feature package complete and ready for publication. Validated by Lambert
 
