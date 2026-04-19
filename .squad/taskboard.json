@@ -163,6 +163,16 @@
       "priority": "medium",
       "dependencies": ["local-rss-delivery"],
       "notes": "Completed 2026-04-19 for issue #14. Reviewed Google Cloud en-US Standard voices A-J and selected en-US-Standard-F for a clear neutral female read at standard-tier pricing. Default audio flow now routes English and Bulgarian Google voice names through the same Google TTS path, with CLI/config overrides plus unittest coverage. Published to nested app repo origin/master in commit 4d1f36b; issue #14 closed automatically on push."
+    },
+    {
+      "id": "daily-episode-automation",
+      "title": "Automate daily article-to-RSS episode publishing",
+      "description": "Issue #15: Check daily for a new article, generate an episode only when new content appears, push the result into the existing RSS feed, and expose an app entry point to turn daily updates on and off.",
+      "owner": "Bishop",
+      "status": "done",
+      "priority": "high",
+      "dependencies": ["pipeline-integration", "article-audio-dedup", "local-rss-delivery"],
+      "notes": "Completed 2026-04-19 for issue #15. Added daily-check and daily-daemon CLI flows, durable scheduler state in data/scheduler_state.json, resilience against fetch/pipeline failures, README scheduling guidance, and scheduler regression coverage. Published to nested app repo origin/master in commit 4b6c545; issue #15 closed automatically on push."
     }
   ]
 }

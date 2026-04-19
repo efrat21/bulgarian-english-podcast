@@ -19,6 +19,8 @@
 - `my-project\tests\test_tts.py` bilingual Google-override regressions must assert per-segment synthesis calls, because `_split_script_by_language()` keeps English title and body as separate English segments around Bulgarian content.
 - English Google voice routing should treat any valid `en-*` Google voice name as a Google path, not only `en-US-*`; derive the `language_code` from the selected voice name and fall back through `GoogleTTSConfig` only when needed.
 - Key publication paths for issue #14 were `my-project\src\knigovishte_podcast\config.py`, `my-project\src\knigovishte_podcast\services\tts.py`, `my-project\src\knigovishte_podcast\cli.py`, `my-project\tests\test_tts.py`, and `my-project\tests\test_cli.py`; final published commit on nested app repo master was `4d1f36b`.
+- README phone-side delivery docs should tell users to run `local-rss-delivery`, use the printed LAN URL (or `--public-host <LAN-IP>`), and keep both phone and computer on the same trusted Wi-Fi while the server is running.
+- Local RSS README guidance should also note that Podcast Addict setup currently serves staged `.wav` enclosures, while `.mp3`, `.m4a`, and `.aac` are supported when those files exist under `data\rss\episodes\`.
 
 ## Team Updates
 
