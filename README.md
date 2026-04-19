@@ -97,6 +97,48 @@ python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko
 python main.py web
 ```
 
+### Daily episode automation
+
+Generate a new episode automatically when a new article is published:
+
+```powershell
+# Run once to check for today's article (idempotent, safe to run multiple times)
+python main.py daily-check
+
+# Run as a background daemon that checks once per day
+python main.py daily-daemon
+
+# Stop the daemon with Ctrl+C
+```
+
+The `daily-check` command:
+- Fetches the latest article from Knigovishte
+- Skips generation if the article URL matches the last processed article
+- Skips generation if the article content matches an already-generated episode (uses existing dedup)
+- Generates a new episode only when new content is found
+- Saves state in `data\scheduler_state.json` so it's safe to run multiple times per day
+- Handles transient errors gracefully: network failures or pipeline errors are logged but count as today's check to avoid retry spam
+
+The `daily-daemon` command:
+- Runs continuously, checking once per day for new articles
+- Wakes up every hour by default to check if it's time for a daily check (configurable with `--interval`)
+- Uses the same idempotent logic as `daily-check`
+- Survives recoverable errors (network issues, translation failures, etc.) and continues checking future days
+- Stop with Ctrl+C when you want to disable daily updates
+
+**Scheduling with Windows Task Scheduler:**
+
+For daily automation without a long-running daemon, schedule `daily-check` with Task Scheduler:
+
+1. Open Task Scheduler
+2. Create a new task that runs daily at your preferred time
+3. Action: Start a program
+   - Program: `python`
+   - Arguments: `main.py daily-check`
+   - Start in: `D:\first_squad_project\my-project` (or your project path)
+
+This approach is more reliable for local machines that may sleep or restart.
+
 ### With filter-based article selection
 
 ```powershell

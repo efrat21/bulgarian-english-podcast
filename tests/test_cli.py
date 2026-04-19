@@ -292,5 +292,61 @@ class CliCommandTests(unittest.TestCase):
         self.assertIn("Starting local web UI at http://127.0.0.1:5050", output)
         self.assertIn(f"Output folder: {self.paths.data}", output)
 
+    def test_daily_check_command_generates_new_episode(self) -> None:
+        """Test daily-check command when a new article is found."""
+        stdout = io.StringIO()
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.build_pipeline") as build_pipeline_mock:
+                mock_pipeline = Mock()
+                mock_pipeline.run.return_value = Mock(
+                    audio_path=self.paths.audio / "test.wav"
+                )
+                build_pipeline_mock.return_value = mock_pipeline
+
+                with patch("knigovishte_podcast.cli.ArticleSelector") as selector_mock:
+                    selector_instance = Mock()
+                    selector_instance.select_article.return_value = self.article
+                    selector_mock.return_value = selector_instance
+
+                    with redirect_stdout(stdout):
+                        exit_code = main(["daily-check"])
+
+        self.assertEqual(exit_code, 0)
+        output = stdout.getvalue()
+        self.assertIn("Running daily episode check", output)
+
+    def test_daily_check_command_passes_voice_overrides(self) -> None:
+        """Test daily-check command with voice overrides."""
+        stdout = io.StringIO()
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.build_pipeline") as build_pipeline_mock:
+                mock_pipeline = Mock()
+                mock_pipeline.run.return_value = Mock(
+                    audio_path=self.paths.audio / "test.wav"
+                )
+                build_pipeline_mock.return_value = mock_pipeline
+
+                with patch("knigovishte_podcast.cli.ArticleSelector") as selector_mock:
+                    selector_instance = Mock()
+                    selector_instance.select_article.return_value = self.article
+                    selector_mock.return_value = selector_instance
+
+                    with patch("knigovishte_podcast.cli.build_default_audio_generator") as audio_mock:
+                        audio_mock.return_value = Mock()
+                        with redirect_stdout(stdout):
+                            exit_code = main([
+                                "daily-check",
+                                "--en-voice", "en-GB-Standard-A",
+                                "--bg-voice", "bg-BG-Standard-B",
+                            ])
+
+        self.assertEqual(exit_code, 0)
+        audio_mock.assert_called_once_with(
+            voice_name="en-GB-Standard-A",
+            bg_voice_name="bg-BG-Standard-B",
+        )
+
 if __name__ == "__main__":
     unittest.main()

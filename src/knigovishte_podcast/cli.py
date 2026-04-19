@@ -9,6 +9,7 @@ from .pipeline import pipeline as build_pipeline
 from .services.article_selector import ArticleFilter, ArticleSelector
 from .services.dedup import ArticleAudioManifest, DuplicateArticleError
 from .services.fetcher import KnigovishteArticleFetcher
+from .services.scheduler import DailyEpisodeScheduler
 from .services.script_builder import PodcastScriptBuilder
 from .services.translator import LangblyTranslator
 from .services.tts import AUDIO_FILE_EXTENSION, build_default_audio_generator
@@ -87,6 +88,24 @@ def build_parser() -> argparse.ArgumentParser:
         default=5000,
         help="Port for the local web server. Defaults to 5000.",
     )
+
+    daily_check_parser = subparsers.add_parser(
+        "daily-check",
+        help="Check for a new article today and generate an episode if needed. Idempotent - safe to run multiple times.",
+    )
+    _add_voice_arguments(daily_check_parser)
+
+    daily_daemon_parser = subparsers.add_parser(
+        "daily-daemon",
+        help="Run as a background daemon, checking once per day for new articles.",
+    )
+    daily_daemon_parser.add_argument(
+        "--interval",
+        type=int,
+        default=3600,
+        help="How often to wake up and check if it's time for a daily check (seconds). Default: 3600 (1 hour).",
+    )
+    _add_voice_arguments(daily_daemon_parser)
 
     return parser
 
@@ -358,6 +377,46 @@ def _run_web(args: argparse.Namespace) -> int:
     app.run(host=args.host, port=args.port, debug=False)
     return 0
 
+
+def _run_daily_check(args: argparse.Namespace) -> int:
+    """Run a single daily check for new articles."""
+    paths = ProjectPaths.from_root()
+    paths.ensure()
+
+    pipeline = build_pipeline(
+        paths=paths,
+        audio_generator=build_default_audio_generator(
+            voice_name=args.en_voice or None,
+            bg_voice_name=args.bg_voice or None,
+        ),
+    )
+    selector = ArticleSelector()
+    scheduler = DailyEpisodeScheduler(pipeline, selector, paths)
+
+    print("Running daily episode check...")
+    result = scheduler.check_and_generate()
+    scheduler._print_result(result)
+    return 0
+
+
+def _run_daily_daemon(args: argparse.Namespace) -> int:
+    """Run as a daemon, checking daily for new articles."""
+    paths = ProjectPaths.from_root()
+    paths.ensure()
+
+    pipeline = build_pipeline(
+        paths=paths,
+        audio_generator=build_default_audio_generator(
+            voice_name=args.en_voice or None,
+            bg_voice_name=args.bg_voice or None,
+        ),
+    )
+    selector = ArticleSelector()
+    scheduler = DailyEpisodeScheduler(pipeline, selector, paths)
+
+    scheduler.run_daemon(check_interval_seconds=args.interval)
+    return 0
+
 def _resolve_article_url(args: argparse.Namespace, paths: ProjectPaths) -> str:
     """
     Resolve the article URL from command line arguments.
@@ -410,6 +469,10 @@ def main(argv: list[str] | None = None) -> int:
             return _run_pipeline(args)
         if args.command == "web":
             return _run_web(args)
+        if args.command == "daily-check":
+            return _run_daily_check(args)
+        if args.command == "daily-daemon":
+            return _run_daily_daemon(args)
     except Exception as exc:
         if args.command == "run":
             print(f"Pipeline failed: {exc}")
