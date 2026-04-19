@@ -28,5 +28,4 @@
 
 📌 Team update (2026-04-19T133500Z): Force-push authorized and executed — nested repo remote history rewritten from 3d1ebce → a48e3f0. Commit a48e3f0 (Remove sentence prefixes from podcast scripts) now published to origin/master. Local and remote aligned. Decision #25 recorded. Decided by efratmiyara-work
 
-📌 Team update (20260419T104656Z): Issue #10 completed — local web UI gap closure. Added missing filter controls (minimum/maximum sentence length, category selector) to blank-URL flow. All filter parameters validated and routed through category-aware article selection. Test suite green; commit 0b2da15 published. Decided by Bishop
-
+📌 Team update (20260419T113723Z): Issue #11 completed — UI refinement (commit 116e9d9): artifact link behavior, progress messaging, section removal, category translation. Implemented by Bishop

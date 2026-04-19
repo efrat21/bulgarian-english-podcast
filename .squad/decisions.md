@@ -709,6 +709,111 @@ Your branch is up to date with 'origin/master'.
 
 None required. The nested repo is now published with its approved state.
 
+### 26. Ripley Issue Triage: #11 (UI Refinement) and #12 (Filtering Bug) (2026-04-19T13:15:00Z)
+
+**Triaged:** 2026-04-19T13:15:00Z  
+**Issues:** #11, #12
+
+#### Issue #11: "fixing the UI"
+
+**Scope:** UX refinement to the local web UI (previously completed as issue #9).
+
+**Requirements:**
+- Change artifact link behavior: link to folder instead of opening it
+- Add progress messaging: "working..." while episode is being created, then "your episode is ready"
+- Remove bottom section with links; keep only the folder link
+- Translate category names from Bulgarian to English
+
+**Owner:** Bishop (Backend Dev)  
+**Rationale:** Bishop implemented the initial web UI for issue #9 and owns the orchestration layer. This is a direct extension of that work—UX polish on the existing Flask+HTML interface.
+
+**Urgency:** Medium. Nice-to-have UX improvement, non-blocking.
+
+**Label:** `squad:bishop`
+
+**Status:** ✅ COMPLETE — Bishop published commit 116e9d9; issue closed.
+
+#### Issue #12: "bug in filtering"
+
+**Scope:** Runtime crash when filtering articles by minimum length and category.
+
+**Symptom:** Selecting "Minimum length (sentences) = 29" and "Category = кълтъра" triggers:
+```
+[WinError -2147221008] CoInitialize has not been called
+```
+
+**Root Cause:** pyttsx3 on Windows requires COM initialization before use. When the web UI spawns a filter+generate request that combines filtering with TTS, the threading context is broken or pyttsx3 is not properly initialized in the Flask request context.
+
+**Owner:** Parker (Audio Dev)  
+**Rationale:** This is a Windows TTS bug in pyttsx3 initialization. Parker owns audio and TTS, and already maintains the voice routing and pyttsx3 integration.
+
+**Urgency:** High. Blocks filtering functionality in the web UI.
+
+**Blocker:** None known; ready for investigation.
+
+**Label:** `squad:parker`
+
+**Status:** 🔄 ACTIVE — Parker working on COM initialization fix.
+
+#### Implications
+
+1. Both issues are straightforward routing cases with clear owners.
+2. Issue #12 should be investigated first (blocker for UI feature).
+3. Issue #11 is a polish follow-up that can wait or proceed in parallel.
+4. No decomposition needed; both are single-agent stories.
+
+---
+
+### 27. Parker Decision: Issue #12 — Initialize COM per local TTS thread (2026-04-19)
+
+**Owner:** Parker  
+**Status:** In progress
+
+#### Decision
+
+Treat Windows COM initialization as part of the local `pyttsx3` boundary, not as a caller responsibility.
+
+#### Why
+
+- The crash happens in the audio layer (`pyttsx3` on Windows), even when the triggering path starts from article filtering in the web UI.
+- Flask request handling can execute audio generation on a worker thread, and Windows SAPI/COM requires the current thread to be initialized before `pyttsx3.init()`.
+- Fixing this inside `services/tts.py` protects every caller: CLI, web flow, filtered article selection, and future background execution paths.
+
+#### Consequences
+
+- Local TTS now initializes COM before engine setup and cleans it up afterward when appropriate.
+- Callers do not need their own Windows-specific COM bootstrap logic.
+- Tests should keep covering the COM wrapper contract so regressions do not come back through new entry points.
+
+---
+
+### 28. Lambert Review: Issue #10 — Local UI Filters (2026-04-19)
+
+**Reviewer:** Lambert (Tester)  
+**Author:** Bishop  
+**Artifact:** Commit 0b2da15 (`Complete local UI filters for issue #10`)  
+**Verdict:** ✅ APPROVED
+
+#### Evidence
+
+1. **Full test suite (82 tests) passes** with zero regressions.
+2. **New tests added (6 total):** 2 in `test_article_selector.py` (category listing URL routing, unknown category rejection) and 4 assertions enhanced / 2 new tests in `test_web.py` (filter form rendering, filter-based selection, min>max validation, duplicate handling preserved).
+3. **Category routing verified:** `_listing_url` correctly dispatches to `/vijte/category/{slug}` when a known category slug is provided.
+4. **Length filter validation works:** min>max, non-numeric, and sub-1 values are all properly caught and surfaced as errors.
+5. **Filters ignored when URL is explicit:** confirmed in code — `_resolve_article_url` returns immediately when `raw_url` is truthy.
+6. **No XSS risk:** Category dropdown values come from hardcoded `KNOWN_CATEGORIES`; length fields are auto-escaped by Jinja2.
+7. **README accurately updated** — removed "reserved for future" language, documented new controls.
+
+#### Non-Blocking Observations
+
+1. **Cyrillic label lookup bug (low severity):** `category_slug()` replaces spaces with hyphens *before* looking up the Cyrillic label map (e.g., `"Спорт и здраве"` → `"спорт-и-здраве"` → misses the key `"спорт и здраве"` → falls through as an unknown slug → rejected). This only affects the CLI `--filter` JSON path when a user writes a Cyrillic label instead of a Latin slug. The web UI is safe because `<select>` options submit slugs directly. Suggest normalizing the map keys the same way, or adding a unit test for `category_slug()` that covers Cyrillic labels.
+
+2. **No dedicated unit tests for `category_slug()`:** The method is exercised indirectly via the `ArticleSelector` integration tests, but there is no focused unit test covering its normalization logic (underscore → hyphen, casefold, Cyrillic label mapping). A small test class would catch the bug above and protect against future regressions.
+
+3. **Filters-ignored-with-URL path untested in web layer:** The existing `test_post_runs_pipeline_for_explicit_url` test submits a URL but doesn't also submit filter values and assert they were ignored. Low risk since the code clearly short-circuits, but a paranoia test would strengthen the contract.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
