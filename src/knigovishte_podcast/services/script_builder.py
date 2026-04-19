@@ -19,8 +19,8 @@ class PodcastScriptBuilder:
             for english_sentence, bulgarian_sentence in zip(
                 translation.sentences_en, article.sentences_bg
             ):
-                lines.append(f"English: {english_sentence}")
-                lines.append(f"Bulgarian: {bulgarian_sentence}")
+                lines.append(english_sentence)
+                lines.append(bulgarian_sentence)
             if repeat_index == 0:
                 lines.append("")
                 lines.append("Let's hear that again.")

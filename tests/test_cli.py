@@ -155,7 +155,7 @@ class CliCommandTests(unittest.TestCase):
         self.assertTrue(script_path.exists())
         script_text = script_path.read_text(encoding="utf-8")
         self.assertIn("English title: English Title", script_text)
-        self.assertIn("Bulgarian: Едно изречение.", script_text)
+        self.assertIn("Едно изречение.", script_text)
         output = stdout.getvalue()
         self.assertIn(f"Script output: {script_path}", output)
 

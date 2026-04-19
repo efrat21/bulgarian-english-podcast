@@ -13,6 +13,12 @@ AUDIO_FILE_EXTENSION = ".wav"
 DEFAULT_BG_GOOGLE_VOICE = "bg-BG-Standard-B"
 
 _BG_LINE_PREFIXES = ("Bulgarian:", "Bulgarian title:")
+_EN_LINE_PREFIXES = ("English:", "English title:")
+_EN_CONTROL_LINES = {
+    "Let's hear that again.",
+    "That's the end of this story. Thanks for listening!",
+}
+_BG_CONTROL_LINES = {"Сега ще го повторим."}
 
 _google_texttospeech: Any | None
 try:
@@ -203,16 +209,42 @@ def build_default_audio_generator(
 def _split_script_by_language(script_text: str) -> list[tuple[str, str]]:
     """Split a podcast script into (language, text) segments.
 
-    Lines whose text starts with a Bulgarian prefix are tagged ``'bg'``;
-    all other lines (including blank separator lines) are tagged ``'en'``.
+    Title lines still use explicit language prefixes. Inside the repeated
+    bilingual body, unprefixed sentence lines alternate English/Bulgarian.
     Consecutive lines with the same tag are merged into a single segment.
     """
     segments: list[tuple[str, str]] = []
     current_lang: str = "en"
     current_lines: list[str] = []
+    in_bilingual_body = False
+    next_body_lang = "en"
 
     for line in script_text.splitlines():
-        lang = "bg" if any(line.startswith(p) for p in _BG_LINE_PREFIXES) else "en"
+        stripped_line = line.strip()
+        if not stripped_line:
+            lang = current_lang
+        elif any(line.startswith(p) for p in _EN_LINE_PREFIXES):
+            lang = "en"
+            in_bilingual_body = line.startswith("English:")
+            if in_bilingual_body:
+                next_body_lang = "bg"
+        elif any(line.startswith(p) for p in _BG_LINE_PREFIXES):
+            lang = "bg"
+            in_bilingual_body = True
+            next_body_lang = "en"
+        elif line in _EN_CONTROL_LINES:
+            lang = "en"
+            in_bilingual_body = False
+        elif line in _BG_CONTROL_LINES:
+            lang = "bg"
+            in_bilingual_body = True
+            next_body_lang = "en"
+        elif in_bilingual_body:
+            lang = next_body_lang
+            next_body_lang = "bg" if lang == "en" else "en"
+        else:
+            lang = "en"
+
         if lang != current_lang:
             if current_lines:
                 segments.append((current_lang, "\n".join(current_lines)))

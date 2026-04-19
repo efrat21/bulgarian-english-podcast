@@ -186,12 +186,13 @@ class SplitScriptByLanguageTests(unittest.TestCase):
         self.assertIn("Welcome.", text)
 
     def test_bulgarian_line_creates_bg_segment(self) -> None:
-        script = "English: Hello.\nBulgarian: Здравей."
+        script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
         segments = _split_script_by_language(script)
-        self.assertEqual(len(segments), 2)
+        self.assertEqual(len(segments), 4)
         self.assertEqual(segments[0][0], "en")
         self.assertEqual(segments[1][0], "bg")
-        self.assertIn("Здравей.", segments[1][1])
+        self.assertEqual(segments[2], ("en", "Hello."))
+        self.assertEqual(segments[3], ("bg", "Здравей."))
 
     def test_bulgarian_title_line_creates_bg_segment(self) -> None:
         script = "English title: Foo\nBulgarian title: Бар\nEnglish: Hi."
@@ -300,7 +301,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
             audio_path = project_root / "audio" / "ep.wav"
             mock_engine = self._make_dummy_engine(audio_path)
 
-            script = "English: Hello.\nBulgarian: Здравей."
+            script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
 
             with patch(
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
@@ -338,7 +339,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
             audio_path = project_root / "audio" / "ep.wav"
             mock_engine = self._make_dummy_engine(audio_path)
 
-            script = "English: Hello.\nBulgarian: Здравей."
+            script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
 
             with patch(
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
@@ -374,7 +375,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                 SimpleNamespace(id="en-voice-id", name="English Voice"),
             ]
 
-            script = "English: Hello.\nBulgarian: Здравей."
+            script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
 
             with patch(
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
@@ -415,7 +416,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                 AudioEncoding=SimpleNamespace(LINEAR16="LINEAR16"),
             )
 
-            script = "English: Hello.\nBulgarian: Здравей."
+            script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
 
             with patch(
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
@@ -441,7 +442,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                         result = generator.generate(script, "ep")
 
             self.assertTrue(result.exists())
-            google_client.synthesize_speech.assert_called_once()
+            self.assertEqual(google_client.synthesize_speech.call_count, 2)
             set_voice_calls = [
                 c for c in mock_engine.setProperty.call_args_list if c[0][0] == "voice"
             ]
