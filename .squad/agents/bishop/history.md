@@ -22,3 +22,5 @@
 
 📌 Team update (2026-04-19T091835Z): Issue #8 completed. Durable artifact deduplication implemented via SHA-256 content hash + manifest at `my-project\data\audio\manifest.json`. Pipeline now idempotent; commit 93d31f9. Decided by Bishop
 
+📌 Team update (2026-04-19T100000Z): Issue #9 completed. Local Flask web UI implemented with REST API endpoints for pipeline commands (`run`, `generate-audio`, `list-articles`). Web UI launches via `python main.py web` on localhost. CLI and web access coexist without conflicts. Commit a53c84e. Decided by Bishop
+
