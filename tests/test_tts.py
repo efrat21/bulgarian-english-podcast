@@ -4,10 +4,11 @@ import io
 import sys
 import unittest
 import wave
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -17,11 +18,16 @@ from knigovishte_podcast.services.tts import (
     Pyttsx3PodcastAudioGenerator,
     _concatenate_wav_files,
     _split_script_by_language,
+    _windows_com_initialized,
     build_default_audio_generator,
 )
 
 
 class PodcastAudioGeneratorTests(unittest.TestCase):
+    @contextmanager
+    def _noop_com_context(self):
+        yield
+
     def test_generate_returns_expected_path_and_invokes_engine(self) -> None:
         with TemporaryDirectory() as tmpdir:
             project_root = Path(tmpdir)
@@ -46,9 +52,13 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
                 return_value=DummyPaths(),
             ):
-                with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine) as mock_init:
-                    generator = Pyttsx3PodcastAudioGenerator(rate=150, volume=0.8)
-                    result_path = generator.generate("Hello world", "episode-slug")
+                with patch(
+                    "knigovishte_podcast.services.tts._windows_com_initialized",
+                    self._noop_com_context,
+                ):
+                    with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine) as mock_init:
+                        generator = Pyttsx3PodcastAudioGenerator(rate=150, volume=0.8)
+                        result_path = generator.generate("Hello world", "episode-slug")
 
             self.assertEqual(result_path, audio_path)
             mock_init.assert_called_once()
@@ -92,9 +102,13 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
                 return_value=DummyPaths(),
             ):
-                with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
-                    generator = Pyttsx3PodcastAudioGenerator(voice_name="english")
-                    generator.generate("Hello world", "episode-slug")
+                with patch(
+                    "knigovishte_podcast.services.tts._windows_com_initialized",
+                    self._noop_com_context,
+                ):
+                    with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
+                        generator = Pyttsx3PodcastAudioGenerator(voice_name="english")
+                        generator.generate("Hello world", "episode-slug")
 
             mock_engine.setProperty.assert_any_call("voice", "voice-1")
 
@@ -118,10 +132,14 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
                 return_value=DummyPaths(),
             ):
-                with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
-                    generator = Pyttsx3PodcastAudioGenerator(voice_name="bulgarian")
-                    with self.assertRaisesRegex(ValueError, "Requested voice not available"):
-                        generator.generate("Hello world", "episode-slug")
+                with patch(
+                    "knigovishte_podcast.services.tts._windows_com_initialized",
+                    self._noop_com_context,
+                ):
+                    with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
+                        generator = Pyttsx3PodcastAudioGenerator(voice_name="bulgarian")
+                        with self.assertRaisesRegex(ValueError, "Requested voice not available"):
+                            generator.generate("Hello world", "episode-slug")
 
     def test_generate_raises_when_voice_name_is_blank(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -140,10 +158,14 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
                 return_value=DummyPaths(),
             ):
-                with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
-                    generator = Pyttsx3PodcastAudioGenerator(voice_name="   ")
-                    with self.assertRaisesRegex(ValueError, "voice_name must not be blank"):
-                        generator.generate("Hello world", "episode-slug")
+                with patch(
+                    "knigovishte_podcast.services.tts._windows_com_initialized",
+                    self._noop_com_context,
+                ):
+                    with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
+                        generator = Pyttsx3PodcastAudioGenerator(voice_name="   ")
+                        with self.assertRaisesRegex(ValueError, "voice_name must not be blank"):
+                            generator.generate("Hello world", "episode-slug")
 
     def test_generate_raises_when_audio_file_is_not_created(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -165,12 +187,77 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                 "knigovishte_podcast.services.tts.ProjectPaths.from_root",
                 return_value=DummyPaths(),
             ):
-                with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
-                    generator = Pyttsx3PodcastAudioGenerator()
-                    with self.assertRaisesRegex(RuntimeError, "Audio generation failed"):
-                        generator.generate("Hello world", "episode-slug")
+                with patch(
+                    "knigovishte_podcast.services.tts._windows_com_initialized",
+                    self._noop_com_context,
+                ):
+                    with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
+                        generator = Pyttsx3PodcastAudioGenerator()
+                        with self.assertRaisesRegex(RuntimeError, "Audio generation failed"):
+                            generator.generate("Hello world", "episode-slug")
 
             self.assertFalse(audio_path.exists())
+
+    def test_generate_initializes_com_for_local_tts(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            class DummyPaths:
+                root = project_root
+                audio = project_root / "audio"
+
+                def ensure(self) -> None:
+                    self.audio.mkdir(parents=True, exist_ok=True)
+
+            mock_engine = Mock()
+            audio_path = project_root / "audio" / "episode-slug.wav"
+
+            def run_and_wait_side_effect() -> None:
+                audio_path.parent.mkdir(parents=True, exist_ok=True)
+                audio_path.write_bytes(b"dummy audio")
+
+            mock_engine.runAndWait.side_effect = run_and_wait_side_effect
+            com_context = MagicMock()
+
+            with patch(
+                "knigovishte_podcast.services.tts.ProjectPaths.from_root",
+                return_value=DummyPaths(),
+            ):
+                with patch(
+                    "knigovishte_podcast.services.tts._windows_com_initialized",
+                    return_value=com_context,
+                ) as com_init:
+                    with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
+                        generator = Pyttsx3PodcastAudioGenerator()
+                        generator.generate("Hello world", "episode-slug")
+
+            com_init.assert_called_once_with()
+            com_context.__enter__.assert_called_once_with()
+            com_context.__exit__.assert_called_once()
+
+
+class WindowsComInitializationTests(unittest.TestCase):
+    def test_context_initializes_and_uninitializes_com(self) -> None:
+        ole32 = Mock()
+        ole32.CoInitialize.return_value = 0
+
+        with patch("knigovishte_podcast.services.tts._ole32", return_value=ole32):
+            with _windows_com_initialized():
+                pass
+
+        ole32.CoInitialize.assert_called_once_with(None)
+        ole32.CoUninitialize.assert_called_once_with()
+
+    def test_context_skips_uninitialize_when_com_mode_already_set(self) -> None:
+        ole32 = Mock()
+        ole32.CoInitialize.return_value = -2147417850
+
+        with patch("knigovishte_podcast.services.tts._ole32", return_value=ole32):
+            with _windows_com_initialized():
+                pass
+
+        ole32.CoInitialize.assert_called_once_with(None)
+        ole32.CoUninitialize.assert_not_called()
 
 
 class SplitScriptByLanguageTests(unittest.TestCase):
