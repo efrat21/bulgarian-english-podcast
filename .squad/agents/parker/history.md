@@ -60,6 +60,19 @@
 - Live Google authentication verified
 - Ready for production podcast generation
 
+## Recent Session (20260419T144115Z)
+
+📌 **Issue #12 Windows COM Initialization Fix Complete**
+- Implemented `_windows_com_initialized()` context manager in services/tts.py
+- Wraps local pyttsx3 generation (single-voice and bilingual paths) in COM initialization
+- Uses ctypes.windll.ole32.CoInitialize()/CoUninitialize() with proper HRESULT handling
+- Comprehensive test coverage added: 125+ new test lines for COM contract verification
+- Tested on Windows request-thread filtering + TTS flow; fixes crash
+- Nested repo commit: 5543082 (Fix Windows filter-path TTS crash)
+- Merged via PR #13 to master; issue #12 closed
+
 ## Team Updates
 
 📌 Team update (20260419T113723Z): Issue #12 assigned and active — Windows COM initialization bug in pyttsx3; fix at TTS boundary. Decision documented: COM init/cleanup inside services/tts.py protects all callers (CLI, web, filtering, background). Routed by Ripley, working by Parker
+
+📌 Team update (20260419T144115Z): Issue #12 complete — Windows COM initialization context manager deployed at TTS boundary; local pyttsx3 protected on Flask request threads; tests passing; PR #13 merged. Implemented by Parker, logged by Scribe.

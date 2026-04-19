@@ -753,7 +753,7 @@ None required. The nested repo is now published with its approved state.
 
 **Label:** `squad:parker`
 
-**Status:** 🔄 ACTIVE — Parker working on COM initialization fix.
+**Status:** ✅ COMPLETE — Parker implemented COM initialization fix; PR #13 merged; issue #12 closed.
 
 #### Implications
 
@@ -764,10 +764,10 @@ None required. The nested repo is now published with its approved state.
 
 ---
 
-### 27. Parker Decision: Issue #12 — Initialize COM per local TTS thread (2026-04-19)
+### 27. Parker Decision & Implementation: Issue #12 — Windows COM Initialization Fix (2026-04-19T13:15:00Z)
 
 **Owner:** Parker  
-**Status:** In progress
+**Status:** ✅ COMPLETE
 
 #### Decision
 
@@ -779,11 +779,24 @@ Treat Windows COM initialization as part of the local `pyttsx3` boundary, not as
 - Flask request handling can execute audio generation on a worker thread, and Windows SAPI/COM requires the current thread to be initialized before `pyttsx3.init()`.
 - Fixing this inside `services/tts.py` protects every caller: CLI, web flow, filtered article selection, and future background execution paths.
 
+#### Implementation
+
+**Commit:** `5543082` ("Fix Windows filter-path TTS crash (Fixes #12)")  
+**Branch:** `squad/12-fix-filtering-tts-com`  
+**Merged:** PR #13 to master; commit `c937e44`
+
+**Changes:**
+- `src/knigovishte_podcast/services/tts.py`: Added `_windows_com_initialized()` context manager using `ctypes.windll.ole32.CoInitialize()` and `CoUninitialize()` with proper HRESULT error handling; wrapped local pyttsx3 generation (single-voice and bilingual paths) in COM context
+- `tests/test_tts.py`: Added comprehensive test coverage (125+ new lines) for COM initialization contract, including noop COM context for non-Windows platforms, HRESULT code validation, and full pyttsx3 + COM flow verification
+
+**Validation:** Tests pass; end-to-end filtering + TTS flow on Windows verified; no regressions.
+
 #### Consequences
 
-- Local TTS now initializes COM before engine setup and cleans it up afterward when appropriate.
+- Local TTS now initializes COM before engine setup and cleans it up afterward when appropriate (context manager ensures cleanup safety).
 - Callers do not need their own Windows-specific COM bootstrap logic.
-- Tests should keep covering the COM wrapper contract so regressions do not come back through new entry points.
+- Tests keep covering the COM wrapper contract to prevent regressions through new entry points.
+- Issue #12 resolved; web UI filtering with TTS now works on Windows.
 
 ---
 
