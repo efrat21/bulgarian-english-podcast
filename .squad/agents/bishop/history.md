@@ -16,6 +16,7 @@
 - Local feed delivery now stages publishable artifacts under `my-project\data\rss\` (`podcast.xml` plus `episodes\`) instead of serving the whole data tree.
 - `my-project\src\knigovishte_podcast\services\rss.py` is the new backend seam for rebuilding the LAN RSS feed and serving it with stdlib HTTP primitives.
 - The `local-rss-delivery` CLI command prints a subscribable LAN URL, rebuilds delivery files from existing `data\audio\` artifacts, and keeps the first slice dependency-free by serving the current `.wav` output directly.
+- `my-project\tests\test_tts.py` bilingual Google-override regressions must assert per-segment synthesis calls, because `_split_script_by_language()` keeps English title and body as separate English segments around Bulgarian content.
 
 ## Team Updates
 
@@ -36,4 +37,7 @@
 📌 Team update (20260419T115408Z): Issue #11 reopened follow-up resolved — Bishop refined web UI success messaging per user feedback (commit bdb149c). Simplified artifact linking behavior, improved progress/completion messaging, removed redundant sections, translated category labels to English. Implementation tested and merged to master. Issue closed. Decided by Bishop
 
 📌 Team update (2026-04-19T12:26:23Z): `local-rss-delivery` implementation complete — RSS service module at services/rss.py, CLI integration, test coverage green, validation passed. Workflow stages artifacts in `my-project\data\rss\`, serves over LAN with stdlib HTTP, reuses current `.wav` format. Decision #28 recorded. Ready for publication. Decided by Bishop
+
+📌 Team update (2026-04-19T12:50:03Z): Issue #14 regression test alignment completed. Analyzed bilingual TTS flow: title segment + body segments make multiple Google calls. Updated test expectations from 1 to 2 English Google calls. Both bilingual and single-voice paths now tested correctly. Ready for Lambert's final approval. Alignment by Bishop
+
 

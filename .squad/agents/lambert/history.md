@@ -55,3 +55,6 @@
 
 📌 Team update (2026-04-19T12:26:25Z): Regression testing for `local-rss-delivery` complete — RSS feed generation with multiple formats (`.wav`, `.mp3`, `.m4a`, `.aac`), LAN serving with IP detection fallback, CLI command paths validated. All regression tests pass; no regressions detected. Feature package complete and ready for publication. Validated by Lambert
 
+📌 Team update (2026-04-19T12:50:03Z): Issue #14 Google English voice review cycle completed. First pass rejected for inconsistent non-en-US override routing; second pass rejected for regression test mismatch (bilingual flow makes two Google calls, not one); final pass approved after Bishop aligned test expectations. Issue approved for publication and closure. Decision #31-32 recorded. Approved by Lambert
+
+

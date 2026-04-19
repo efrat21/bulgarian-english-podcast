@@ -7,6 +7,9 @@
 
 ## Learnings
 
+- English Google TTS routing in `my-project\src\knigovishte_podcast\services\tts.py` must treat valid `en-*` Google voice names as Google voices, not local `pyttsx3` fallbacks.
+- For Google voice overrides, derive the request `language_code` from the selected voice name (for example `en-GB-Standard-A` -> `en-GB`) so override routing stays consistent with the provider path.
+- Regression coverage for mixed local/Google voice routing lives in `my-project\tests\test_tts.py`; issue #14's revision specifically guards non-`en-US` English Google overrides.
 - Initial squad cast created for a greenfield project with unclear stack choices.
 - Copilot instructions file should be kept minimal and fact-based while project is in scaffolding phase. Removed generic "when code is added" future-facing sections and MCP placeholder guidance. Focused on workspace layout (squad at root, my-project as nested empty repo) and work routing rules that are already decided.
 - Team consensus decisions properly recorded in `.squad/decisions/inbox/` for post-session processing.
@@ -68,6 +71,8 @@
 📌 Team update (2026-04-19T12:26:24Z): `local-rss-delivery` implementation reviewed and approved — Bishop's RSS service module aligns with staged artifact strategy, LAN delivery boundary correct, test coverage comprehensive. Decision #28 recorded. APPROVED FOR PUBLICATION. Verified by Ripley
 
 📌 Team update (2026-04-19T12:26:24Z): Issue #14 triage complete — GitHub enhancement request #14 ("new english voice") assigned to Parker (Audio Dev). Scope: research Google Cloud Text-to-Speech English-US Standard voices and add voice parameter support to CLI. Priority: Medium. Sequencing: Queue after `local-rss-delivery` completion. Decision #30 recorded. Decided by Ripley
+
+📌 Team update (2026-04-19T12:50:03Z): Issue #14 ("Google English voice") revision and approval. Revised routing rule to treat all en-* Google voice names consistently (not en-US-only). Language code derived from voice name with fallback pattern. Architectural decision consistent with bilingual voice routing. Decision #32 recorded. Decided by Ripley
 
 
 ## Recent Session (2026-04-13T180001Z)

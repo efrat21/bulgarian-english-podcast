@@ -1033,3 +1033,53 @@ The claimed behavior is fully substantiated by template changes, test assertions
 1. Scribe merges this decision into active decisions.md
 2. Taskboard entry `google-english-voice` created with Parker as owner
 3. Parker to pick up after `local-rss-delivery` status changes to `done`
+
+### 31. Parker Decision: Default English Google Voice Uses `en-US-Standard-F` (2026-04-19)
+
+**Owner:** Parker
+
+For issue #14, the app should use a Google Cloud **English-US Standard-tier** voice by default instead of depending on whatever local Windows voice happens to be installed.
+
+## Decision
+
+- Reviewed the currently documented Google Cloud **en-US Standard** voices: `en-US-Standard-A` through `en-US-Standard-J`
+- Selected **`en-US-Standard-F`** as the default English voice
+- Routed both `en-US-*` and `bg-BG-*` voice names through the existing Google synthesis path in `services\tts.py`
+- Kept explicit local `pyttsx3` voice substrings working as an override via `--en-voice` / `--bg-voice`
+
+## Rationale
+
+- All of the `en-US-Standard-*` voices stay in the standard pricing tier, so the choice should optimize for acceptable spoken output rather than premium quality.
+- `en-US-Standard-F` gives a clear, neutral female read that suits a podcast narrator role and pairs cleanly with the already-selected Bulgarian Google voice `bg-BG-Standard-B`.
+- Defaulting to Google for both languages makes output more reproducible across machines, while the CLI still preserves a low-friction local fallback when needed.
+
+## Affected paths
+
+- `my-project\src\knigovishte_podcast\config.py`
+- `my-project\src\knigovishte_podcast\services\tts.py`
+- `my-project\src\knigovishte_podcast\cli.py`
+- `my-project\README.md`
+- `my-project\tests\test_tts.py`
+- `my-project\tests\test_cli.py`
+
+### 32. Ripley Decision: Google English Voice Routing Consistency (2026-04-19)
+
+**Owner:** Ripley
+
+**Context**
+
+Lambert rejected issue #14 because `my-project\src\knigovishte_podcast\services\tts.py` only kept English Google TTS on the Google path for `en-US-*` voice names. A valid override like `en-GB-Standard-A` silently dropped to local `pyttsx3`, which made English override handling less reliable than the Bulgarian Google path.
+
+## Decision
+
+Treat valid English Google voice names broadly as `en-*` for routing, not only `en-US-*`. When the selected voice is routed to Google TTS, derive the request language code from the actual voice name and use the configured language code only as a fallback.
+
+## Why
+
+The voice name is the most precise statement of the user's intent. Hardcoding `en-US` into routing makes cross-locale English overrides brittle and can send a valid Google voice request down the wrong provider path.
+
+## Impact
+
+- Issue #14 stays compatible with the existing default `en-US-Standard-F`.
+- English Google overrides such as `en-GB-Standard-A` keep using Google TTS instead of silently switching engines.
+- Tests now cover both single-voice and bilingual English override cases so the routing rule stays explicit.
