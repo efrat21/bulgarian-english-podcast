@@ -123,6 +123,16 @@
       "priority": "low",
       "dependencies": ["pipeline-integration", "docs-readme"],
       "notes": "Completed. Chose the minimum solid packaging path: distribute as a normal Python package built from pyproject.toml (wheel/sdist, local pip install). Explicitly deferred Docker/hosted deployment because the current product is a local CLI, not a service."
+    },
+    {
+      "id": "article-audio-dedup",
+      "title": "Prevent duplicate article audio generation",
+      "description": "Add a durable article usage check before audio generation so previously used article content is detected and reused instead of creating another audio file.",
+      "owner": "Bishop",
+      "status": "done",
+      "priority": "high",
+      "dependencies": ["pipeline-integration", "cli-main-entry"],
+      "notes": "Completed for issue #8. Added data/audio/manifest.json keyed by a content hash of the Bulgarian title + sentences, short-circuited run and generate-audio when an article was already used, and covered the behavior with manifest, pipeline, and CLI tests."
     }
   ]
 }
