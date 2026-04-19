@@ -17,3 +17,6 @@
 ## Team Updates
 
 📌 Team update (2026-04-17T16:07:23Z): Pipeline owns artifact persistence — keep artifact caching inside pipeline layer (HTML in data/articles, scripts in data/scripts before TTS), keep CLI thin with only reporting. Decided by Ripley
+
+📌 Team update (2026-04-19T120000Z): Issue #8 (artifact deduplication) assigned to Bishop. Issue #9 (local UI) flagged for architecture clarification. Triage complete. Decided by Ripley
+

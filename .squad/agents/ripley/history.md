@@ -32,6 +32,20 @@
 - The current app verification flow from `my-project\` is `python -m pip install -e ".[dev]"`, `python -m ruff check main.py src tests`, `python -m mypy main.py src`, `python -m unittest discover -s tests -v`, and `python -m build`.
 - `my-project\README.md` is the live operator/developer guide for the CLI and now documents install, command usage, artifact layout, quality checks, and packaging expectations rather than scaffold-era planning notes.
 - The root Squad repo currently has no upstream configured for local `master`; after fetching on 2026-04-17 it was found to diverge from `origin/master` (local ahead 16, behind 7), so straight push cleanup can fail with a non-fast-forward rejection until remote changes are integrated.
+- Issues #8 (artifact deduplication) and #9 (local UI) triaged 2026-04-19; #8 assigned to Bishop, #9 flagged for architecture decision (web vs. desktop vs. CLI).
+
+## Recent Session (2026-04-19T120000Z)
+
+📌 **Ralph Board Scan & Issue Triage Complete**
+- Ralph scanned efrat21/bulgarian-english-podcast for untriaged open issues
+- Found 2 issues: #8 (artifact deduplication) and #9 (local UI)
+- Ripley triaged both with scope analysis, risk assessment, and routing decisions
+- Issue #8 assigned to Bishop (Backend Dev); idempotency check with persistent artifact tracking
+- Issue #9 flagged for Ripley architecture decision; UI type (web vs. desktop vs. CLI) must be clarified before member assignment
+- Both decisions merged into active decisions.md by Scribe
+- Cross-agent context updated in Bishop and Ripley histories
+- Labels: #8 => `squad`, `squad:bishop`; #9 => `squad` (pending clarification)
+
 
 ## Recent Session (2026-04-13T180001Z)
 

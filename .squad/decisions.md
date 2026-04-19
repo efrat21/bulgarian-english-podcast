@@ -302,6 +302,67 @@ Quality is subjective. Users sensitive to prosody may prefer a Chirp3 HD voice. 
 
 No code changes required. Current defaults are correct.
 
+### 19. Ripley Decision: Issues #8 and #9 Triage (2026-04-19T120000Z)
+**Owner:** Ripley  
+**Status:** Triage Complete
+
+**Issue #8: Artifact Deduplication ("check if the article was used before creating a new audio file")**
+
+**Assignment:** Bishop (Backend Dev)
+
+**Scope:** Add idempotency check to the pipeline. Before generating a podcast for an article, verify if that article has already been processed. If yes, skip generation and report the existing artifact.
+
+**Risk & Constraints:**
+- Moderate scope: Requires persistent artifact tracking (manifest, hash registry, or database)
+- Current architecture: Articles cached under `my-project\data\articles\` with filename = URL slug
+- Dependency: Existing pipeline/CLI foundation (stable)
+- Open question: What constitutes duplicate? URL? Content hash?
+
+**Implementation Guidance:**
+- Keep check lightweight (avoid rescan overhead)
+- Suggested: Simple manifest approach at `my-project\data\.article_registry.json` with `{url, article_id, generated_at}` entries
+- CLI should report whether generation was skipped or newly created
+
+**Labels:** `squad`, `squad:bishop`
+
+**Rationale:** Pipeline orchestration and artifact caching are backend responsibilities. Bishop owns data flow and can decide the tracking mechanism.
+
+---
+
+**Issue #9: Local UI ("create a local user interface")**
+
+**Status:** Requires architecture decision before assignment
+
+**Scope:** Build a local UI for the podcast pipeline with features:
+1. Optional URL input field
+2. Fallback to latest article if URL empty
+3. Hyperlink to output folder
+4. Status display of generated podcasts
+
+**Risk & Constraints:**
+- High scope: Requires UI framework decision (web, desktop, CLI-based)
+- Ambiguous architecture: Issue doesn't specify UI type
+- Cross-cutting: Affects CLI, pipeline, data model, and frontend tooling
+- Dependency: Needs stable pipeline/CLI (in place)
+
+**Routing:** Architecture-dependent. Options:
+- **If web-based:** Bishop (backend API + Flask/Django) + frontend specialist (TBD)
+- **If desktop:** Ripley (architecture) + specialist for PyQt/Tkinter/etc (TBD)
+- **If enhanced CLI:** Bishop (extend existing CLI with interactive menu)
+
+**Labels:** `squad` only (pending clarification)
+
+**Next Step:** Ripley to propose UI type and sync with user (efratmiyara-work) before member assignment.
+
+---
+
+**Summary:**
+
+| Issue | Owner | Status | Labels |
+|-------|-------|--------|--------|
+| #8 | Bishop | Assigned; awaiting pickup | `squad`, `squad:bishop` |
+| #9 | TBD | Architecture pending | `squad` |
+
 ## Governance
 
 - All meaningful changes require team consensus
