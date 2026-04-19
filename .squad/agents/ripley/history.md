@@ -34,6 +34,17 @@
 - The root Squad repo currently has no upstream configured for local `master`; after fetching on 2026-04-17 it was found to diverge from `origin/master` (local ahead 16, behind 7), so straight push cleanup can fail with a non-fast-forward rejection until remote changes are integrated.
 - Issues #8 (artifact deduplication) and #9 (local UI) triaged 2026-04-19; #8 assigned to Bishop, #9 flagged for architecture decision (web vs. desktop vs. CLI).
 
+## Recent Session (2026-04-19T122809Z)
+
+📌 **Scribe Close-out After Issue Approvals**
+- Lambert approved issues #8 (artifact deduplication) and #9 (local web UI)
+- Orchestration logs recorded for both approvals
+- Lambert review of issue #9 merged into active decisions.md
+- Session log documented coordination of approvals
+- Agent histories updated with team context
+- Scribe committed all .squad/ changes
+- Ralph now ready for issue close-out and queue triage
+
 ## Recent Session (2026-04-19T100000Z)
 
 📌 **Ripley Issue #9 Architecture Clarification — Web-Based UI**

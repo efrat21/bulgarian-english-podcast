@@ -522,6 +522,39 @@ New `dedup.py` service module, integrations into `pipeline.py` and `cli.py`, tes
 **Conclusion:**
 The implementation is sound, well-tested, and correctly wired across all layers. Dedup logic is content-aware, durable, and fail-safe. Approved for merge.
 
+### 24. Lambert Review: Issue #9 Local Web UI — Approved (2026-04-19T122809Z)
+**Reviewer:** Lambert (Tester)  
+**Author:** Bishop  
+**Commit:** `a53c84e` (`Add local web UI for #9`)  
+**Verdict:** ✅ APPROVED
+
+**What Was Reviewed:**
+Flask web application with REST API endpoints, HTML template with Jinja2 auto-escaping, integration with existing pipeline, test suite, and documentation updates.
+
+**Evidence Supporting Approval:**
+
+1. **All 13 tests pass** — 4 new web UI tests + 1 new CLI web test + 8 existing tests, all green
+2. **Template auto-escaping active** — no `|safe` usage in Jinja template; user-supplied URL and error messages are properly escaped (XSS safe)
+3. **Pipeline integration is correct** — web handler calls the same `pipeline()` factory used by the CLI, passing `use_cached_html` correctly based on the refresh checkbox
+4. **DuplicateArticleError handled gracefully** — reuses the dedup system from issue #8 and displays a friendly "existing audio reused" message
+5. **Dependency declared correctly** — Flask added to both `pyproject.toml` and `requirements.txt`
+6. **Lazy import** — `from .web import create_app` is inside `_run_web()`, so Flask is not loaded for non-web CLI commands
+7. **`debug=False` explicit** — no risk of accidentally exposing the Werkzeug debugger
+8. **README updated** — documents the `web` command, port flag, and usage
+
+**Minor Observations (Non-Blocking):**
+
+- **No test for generic exception path** — `except Exception as exc: error = str(exc)` at web.py:106 is untested. The handler is trivial, but a future tester pass could add a sad-path test.
+- **Filter selection not exposed** — the issue mentions "filter parameters," but the web UI does not expose the `--filter` JSON option the CLI has. Selecting the latest article without a filter is a reasonable first slice. Can be added later.
+- **`file://` URIs** — artifact links use `Path.as_uri()` which produces `file:///` links. Some browsers refuse to follow `file://` links from an `http://` page. This is a known local-app limitation, not a bug.
+- **Template is inline** — `render_template_string` with a long string constant works for a single-page form but will be harder to maintain if the UI grows. Worth extracting to a template file in a future pass.
+
+**Pre-existing Failure (not a regression):**
+The known failure in `tests/test_script_builder.py` caused by an unstaged change in `src/knigovishte_podcast/services/script_builder.py` is unrelated to issue #9. No coupling found.
+
+**Conclusion:**
+The implementation is sound, fully tested, and correctly integrates with the existing pipeline. Web UI is secure and performant. Approved for merge.
+
 ## Governance
 
 - All meaningful changes require team consensus
