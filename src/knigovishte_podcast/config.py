@@ -70,28 +70,37 @@ class TranslationConfig:
 
 @dataclass(frozen=True)
 class GoogleTTSConfig:
+    en_voice_name: str = "en-US-Standard-F"
+    en_language_code: str = "en-US"
     bg_voice_name: str = "bg-BG-Standard-B"
     bg_language_code: str = "bg-BG"
     credentials_path: Path | None = None
 
     @classmethod
     def from_env(cls) -> "GoogleTTSConfig":
+        en_voice_name = os.getenv("GOOGLE_TTS_EN_VOICE_NAME", "en-US-Standard-F")
+        en_language_code = os.getenv(
+            "GOOGLE_TTS_EN_LANGUAGE_CODE",
+            google_language_code_from_voice_name(en_voice_name, fallback="en-US"),
+        )
         voice_name = os.getenv("GOOGLE_TTS_BG_VOICE_NAME", "bg-BG-Standard-B")
         language_code = os.getenv(
             "GOOGLE_TTS_BG_LANGUAGE_CODE",
-            google_language_code_from_voice_name(voice_name),
+            google_language_code_from_voice_name(voice_name, fallback="bg-BG"),
         )
         credentials_value = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         credentials_path = Path(credentials_value) if credentials_value else None
         return cls(
+            en_voice_name=en_voice_name,
+            en_language_code=en_language_code,
             bg_voice_name=voice_name,
             bg_language_code=language_code,
             credentials_path=credentials_path,
         )
 
 
-def google_language_code_from_voice_name(voice_name: str) -> str:
+def google_language_code_from_voice_name(voice_name: str, *, fallback: str) -> str:
     parts = voice_name.strip().split("-")
     if len(parts) >= 2 and parts[0] and parts[1]:
         return f"{parts[0]}-{parts[1]}"
-    return "bg-BG"
+    return fallback

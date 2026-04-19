@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from knigovishte_podcast.config import GoogleTTSConfig
 from knigovishte_podcast.services.tts import (
     DEFAULT_BG_GOOGLE_VOICE,
+    DEFAULT_EN_GOOGLE_VOICE,
     Pyttsx3PodcastAudioGenerator,
     _concatenate_wav_files,
     _split_script_by_language,
@@ -521,6 +522,8 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                             voice_name="english",
                             bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
                             google_tts_config=GoogleTTSConfig(
+                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                en_language_code="en-US",
                                 bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
                                 bg_language_code="bg-BG",
                             ),
@@ -537,16 +540,197 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
             self.assertIn("en-voice-id", voice_ids_used)
             self.assertNotIn("bg-voice-id", voice_ids_used)
 
+    def test_single_voice_google_english_uses_google_client(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            class DummyPaths:
+                root = project_root
+                audio = project_root / "audio"
+
+                def ensure(self) -> None:
+                    self.audio.mkdir(parents=True, exist_ok=True)
+
+            google_client = Mock()
+            google_client.synthesize_speech.return_value = SimpleNamespace(
+                audio_content=self._make_wav_bytes()
+            )
+            fake_google = SimpleNamespace(
+                SynthesisInput=lambda *, text: {"text": text},
+                VoiceSelectionParams=lambda **kwargs: kwargs,
+                AudioConfig=lambda **kwargs: kwargs,
+                AudioEncoding=SimpleNamespace(LINEAR16="LINEAR16"),
+            )
+
+            with patch(
+                "knigovishte_podcast.services.tts.ProjectPaths.from_root",
+                return_value=DummyPaths(),
+            ):
+                with patch("knigovishte_podcast.services.tts.pyttsx3.init") as init_local:
+                    with patch(
+                        "knigovishte_podcast.services.tts.google_texttospeech",
+                        fake_google,
+                    ):
+                        generator = Pyttsx3PodcastAudioGenerator(
+                            voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                            google_tts_config=GoogleTTSConfig(
+                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                en_language_code="en-US",
+                                bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+                                bg_language_code="bg-BG",
+                            ),
+                            google_client=google_client,
+                        )
+                        result = generator.generate("Hello world", "ep")
+
+            self.assertTrue(result.exists())
+            init_local.assert_not_called()
+            google_client.synthesize_speech.assert_called_once_with(
+                input={"text": "Hello world"},
+                voice={"language_code": "en-US", "name": DEFAULT_EN_GOOGLE_VOICE},
+                audio_config={"audio_encoding": "LINEAR16"},
+            )
+
+    def test_single_voice_google_english_override_keeps_google_path(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            class DummyPaths:
+                root = project_root
+                audio = project_root / "audio"
+
+                def ensure(self) -> None:
+                    self.audio.mkdir(parents=True, exist_ok=True)
+
+            google_client = Mock()
+            google_client.synthesize_speech.return_value = SimpleNamespace(
+                audio_content=self._make_wav_bytes()
+            )
+            fake_google = SimpleNamespace(
+                SynthesisInput=lambda *, text: {"text": text},
+                VoiceSelectionParams=lambda **kwargs: kwargs,
+                AudioConfig=lambda **kwargs: kwargs,
+                AudioEncoding=SimpleNamespace(LINEAR16="LINEAR16"),
+            )
+            english_override = "en-GB-Standard-A"
+
+            with patch(
+                "knigovishte_podcast.services.tts.ProjectPaths.from_root",
+                return_value=DummyPaths(),
+            ):
+                with patch("knigovishte_podcast.services.tts.pyttsx3.init") as init_local:
+                    with patch(
+                        "knigovishte_podcast.services.tts.google_texttospeech",
+                        fake_google,
+                    ):
+                        generator = Pyttsx3PodcastAudioGenerator(
+                            voice_name=english_override,
+                            google_tts_config=GoogleTTSConfig(
+                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                en_language_code="en-US",
+                                bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+                                bg_language_code="bg-BG",
+                            ),
+                            google_client=google_client,
+                        )
+                        result = generator.generate("Hello world", "ep")
+
+            self.assertTrue(result.exists())
+            init_local.assert_not_called()
+            google_client.synthesize_speech.assert_called_once_with(
+                input={"text": "Hello world"},
+                voice={"language_code": "en-GB", "name": english_override},
+                audio_config={"audio_encoding": "LINEAR16"},
+            )
+
+    def test_bilingual_google_english_override_keeps_google_path(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            class DummyPaths:
+                root = project_root
+                audio = project_root / "audio"
+
+                def ensure(self) -> None:
+                    self.audio.mkdir(parents=True, exist_ok=True)
+
+            audio_path = project_root / "audio" / "ep.wav"
+            mock_engine = self._make_dummy_engine(audio_path)
+            google_client = Mock()
+            google_client.synthesize_speech.return_value = SimpleNamespace(
+                audio_content=self._make_wav_bytes()
+            )
+            fake_google = SimpleNamespace(
+                SynthesisInput=lambda *, text: {"text": text},
+                VoiceSelectionParams=lambda **kwargs: kwargs,
+                AudioConfig=lambda **kwargs: kwargs,
+                AudioEncoding=SimpleNamespace(LINEAR16="LINEAR16"),
+            )
+            english_override = "en-GB-Standard-A"
+            script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
+
+            with patch(
+                "knigovishte_podcast.services.tts.ProjectPaths.from_root",
+                return_value=DummyPaths(),
+            ):
+                with patch(
+                    "knigovishte_podcast.services.tts.pyttsx3.init",
+                    return_value=mock_engine,
+                ):
+                    with patch(
+                        "knigovishte_podcast.services.tts.google_texttospeech",
+                        fake_google,
+                    ):
+                        generator = Pyttsx3PodcastAudioGenerator(
+                            voice_name=english_override,
+                            bg_voice_name="bulgarian",
+                            google_tts_config=GoogleTTSConfig(
+                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                en_language_code="en-US",
+                                bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+                                bg_language_code="bg-BG",
+                            ),
+                            google_client=google_client,
+                        )
+                        result = generator.generate(script, "ep")
+
+            self.assertTrue(result.exists())
+            synthesize_calls = google_client.synthesize_speech.call_args_list
+            self.assertEqual(len(synthesize_calls), 2)
+            self.assertEqual(
+                [call.kwargs["input"] for call in synthesize_calls],
+                [{"text": "English title: Foo"}, {"text": "Hello."}],
+            )
+            self.assertEqual(
+                [call.kwargs["voice"] for call in synthesize_calls],
+                [
+                    {"language_code": "en-GB", "name": english_override},
+                    {"language_code": "en-GB", "name": english_override},
+                ],
+            )
+            set_voice_calls = [
+                c for c in mock_engine.setProperty.call_args_list if c[0][0] == "voice"
+            ]
+            voice_ids_used = [c[0][1] for c in set_voice_calls]
+            self.assertIn("bg-voice-id", voice_ids_used)
+            self.assertNotIn("en-voice-id", voice_ids_used)
+
 
 class BuildDefaultAudioGeneratorTests(unittest.TestCase):
-    def test_default_factory_uses_google_bulgarian_voice(self) -> None:
-        config = GoogleTTSConfig(bg_voice_name=DEFAULT_BG_GOOGLE_VOICE, bg_language_code="bg-BG")
+    def test_default_factory_uses_google_english_and_bulgarian_voices(self) -> None:
+        config = GoogleTTSConfig(
+            en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+            en_language_code="en-US",
+            bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+            bg_language_code="bg-BG",
+        )
         with patch(
             "knigovishte_podcast.services.tts.GoogleTTSConfig.from_env",
             return_value=config,
         ):
             generator = build_default_audio_generator()
 
+        self.assertEqual(generator.voice_name, DEFAULT_EN_GOOGLE_VOICE)
         self.assertEqual(generator.bg_voice_name, DEFAULT_BG_GOOGLE_VOICE)
         self.assertEqual(generator.google_tts_config, config)
 

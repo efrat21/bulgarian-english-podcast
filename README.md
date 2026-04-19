@@ -13,7 +13,7 @@ Local-first Python CLI for turning a public Knigovishte article into:
 - `fetch` downloads a Knigovishte article, parses the Bulgarian title/body, and caches the HTML.
 - `translate` calls Langbly and saves ordered English sentence pairs.
 - `build-script` formats the bilingual episode script.
-- `generate-audio` renders the script to a local `.wav` file, using local `pyttsx3` for English and Google Cloud TTS for Bulgarian by default.
+- `generate-audio` renders the script to a local `.wav` file, using Google Cloud TTS standard voices for English and Bulgarian by default.
 - `run` executes the full fetch → translate → script → audio pipeline.
 - `web` starts a small local Flask UI for running the same pipeline in a browser.
 
@@ -27,8 +27,8 @@ The app is already wired end to end. It is not a scaffold-only README anymore.
 - Windows-friendly local environment
 - Internet access for `fetch`, `translate`, `build-script`, `generate-audio`, and `run`
 - A valid `LANGBLY_API_KEY` for any command that translates text
-- A working local speech engine supported by `pyttsx3` for English audio generation
-- Google Cloud Text-to-Speech credentials for Bulgarian audio generation
+- Google Cloud Text-to-Speech credentials for English and Bulgarian audio generation
+- A working local speech engine supported by `pyttsx3` if you want to override either language with a local voice
 
 Install dependencies:
 
@@ -54,17 +54,27 @@ Optional translation override:
 LANGBLY_BASE_URL=https://api.langbly.com
 ```
 
-Bulgarian audio defaults to Google Cloud voice `bg-BG-Standard-B`. Configure credentials with the standard Google env var:
+Google audio defaults to English voice `en-US-Standard-F` and Bulgarian voice `bg-BG-Standard-B`. Configure credentials with the standard Google env var:
 
 ```powershell
 $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\service-account.json"
 ```
 
-Optional Bulgarian voice overrides:
+Google Cloud English-US Standard voices currently available in the standard tier are `en-US-Standard-A` through `en-US-Standard-J`. This project defaults to `en-US-Standard-F` because it stays in the standard-price tier and gives a clear neutral female read that fits the podcast format well. If you override the English Google voice with another valid English Google voice name such as `en-GB-Standard-A`, the app keeps that segment on the Google TTS path and infers the matching language code from the voice name unless you explicitly override it.
+
+Optional Google voice overrides:
 
 ```powershell
+$env:GOOGLE_TTS_EN_VOICE_NAME="en-US-Standard-F"
+$env:GOOGLE_TTS_EN_LANGUAGE_CODE="en-US"
 $env:GOOGLE_TTS_BG_VOICE_NAME="bg-BG-Standard-B"
 $env:GOOGLE_TTS_BG_LANGUAGE_CODE="bg-BG"
+```
+
+You can still force a local `pyttsx3` voice by passing a local voice substring on the CLI, for example:
+
+```powershell
+python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --en-voice "zira"
 ```
 
 ## Key commands
@@ -81,6 +91,8 @@ python main.py build-script --url "https://www.knigovishte.bg/vijte/1532-kolko-t
 python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --refresh
+python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
+python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --en-voice "en-US-Standard-C" --bg-voice "bg-BG-Standard-B"
 python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --en-voice "zira" --bg-voice "bg-BG-Standard-B"
 python main.py web
 ```
@@ -166,6 +178,8 @@ GitHub Actions now runs the same lint, type-check, test, and package-build flow 
 - `data\scripts\{slug}.txt` — bilingual podcast script
 - `data\audio\{slug}.wav` — generated audio
 - `data\audio\manifest.json` — durable article-content hash registry used to skip duplicate audio generation
+- `data\rss\podcast.xml` — generated local RSS feed for podcast clients
+- `data\rss\episodes\{filename}` — staged audio files served by the local RSS command
 
 The CLI is local-first: cached article HTML is reused unless `--refresh` is passed. Once an article has produced audio, later `run` or `generate-audio` calls for the same article content reuse the manifest entry and skip creating a duplicate `.wav`.
 
@@ -189,6 +203,7 @@ Key code paths:
 - `src\knigovishte_podcast\services\translator.py` — Langbly API adapter
 - `src\knigovishte_podcast\services\script_builder.py` — bilingual script formatter
 - `src\knigovishte_podcast\services\tts.py` — mixed local/Google audio generation
+- `src\knigovishte_podcast\services\rss.py` — local RSS feed generation plus stdlib HTTP serving for LAN delivery
 - `tests\` — unittest coverage for CLI, pipeline, and service boundaries
 
 ## Current limitations
@@ -196,8 +211,9 @@ Key code paths:
 - Fetching only supports public Knigovishte article pages that still use the current `kmedia-article-title` and `kmedia-article-content` structure.
 - Sentence splitting is heuristic and may mishandle Bulgarian abbreviations or unusual punctuation.
 - Translation depends on Langbly availability, credentials, and response shape.
-- Audio generation currently targets local `.wav` output only.
-- English `pyttsx3` voice availability varies by machine and installed system voices.
+- Audio generation currently targets local `.wav` output only, and the first local RSS delivery slice serves those staged `.wav` files directly over the LAN.
+- English Google synthesis depends on Google Cloud credentials and network access; the default configured voice is `en-US-Standard-F`.
+- Local `pyttsx3` fallback voice availability still varies by machine and installed system voices.
 - Bulgarian synthesis depends on Google Cloud credentials and network access; the default configured voice is `bg-BG-Standard-B`.
 - Filter-based selection scans the Knigovishte listing page and fetches articles sequentially; performance depends on network and filter criteria.
 - Category filtering uses the matching Knigovishte category listing page before any length-based scan.

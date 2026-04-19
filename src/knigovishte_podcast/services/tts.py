@@ -9,9 +9,14 @@ from typing import Any
 
 import pyttsx3
 
-from ..config import GoogleTTSConfig, ProjectPaths
+from ..config import (
+    GoogleTTSConfig,
+    ProjectPaths,
+    google_language_code_from_voice_name,
+)
 
 AUDIO_FILE_EXTENSION = ".wav"
+DEFAULT_EN_GOOGLE_VOICE = "en-US-Standard-F"
 DEFAULT_BG_GOOGLE_VOICE = "bg-BG-Standard-B"
 _COM_ALREADY_INITIALIZED = 1
 _COM_CHANGED_MODE = 0x80010106
@@ -47,7 +52,7 @@ class PlaceholderPodcastAudioGenerator(PodcastAudioGenerator):
 
 
 class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
-    """Generate podcast audio with local English TTS and optional Google Bulgarian TTS."""
+    """Generate podcast audio with local or Google TTS voices."""
 
     def __init__(
         self,
@@ -94,6 +99,14 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         return audio_path
 
     def _generate_single_voice(self, script_text: str, audio_path: Path) -> None:
+        if _should_route_google("en", self.voice_name):
+            self._synthesize_google_segment(
+                script_text,
+                audio_path,
+                voice_name=self.voice_name,
+                language_code=self._google_language_code_for_voice("en", self.voice_name),
+            )
+            return
         self._synthesize_local_segment(script_text, audio_path, self.voice_name)
 
     def _synthesize_local_segment(
@@ -123,10 +136,15 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         try:
             for i, (lang, text) in enumerate(segments):
                 temp_path = audio_path.parent / f"_{audio_path.stem}_part{i}{AUDIO_FILE_EXTENSION}"
-                if lang == "bg" and _is_google_bg_voice(self.bg_voice_name):
-                    self._synthesize_google_segment(text, temp_path)
+                voice_name = self.bg_voice_name if lang == "bg" else self.voice_name
+                if _should_route_google(lang, voice_name):
+                    self._synthesize_google_segment(
+                        text,
+                        temp_path,
+                        voice_name=voice_name,
+                        language_code=self._google_language_code_for_voice(lang, voice_name),
+                    )
                 else:
-                    voice_name = self.bg_voice_name if lang == "bg" else self.voice_name
                     self._synthesize_local_segment(text, temp_path, voice_name)
                 temp_files.append(temp_path)
             _concatenate_wav_files(temp_files, audio_path)
@@ -149,22 +167,29 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
 
         raise ValueError(f"Requested voice not available: {voice_name}")
 
-    def _synthesize_google_segment(self, text: str, output_path: Path) -> None:
-        voice_name = (self.bg_voice_name or "").strip()
+    def _synthesize_google_segment(
+        self,
+        text: str,
+        output_path: Path,
+        *,
+        voice_name: str | None,
+        language_code: str,
+    ) -> None:
+        voice_name = (voice_name or "").strip()
         if not voice_name:
-            raise ValueError("bg_voice_name must not be blank when provided.")
+            raise ValueError("Google voice_name must not be blank when provided.")
         google_api = google_texttospeech
         if google_api is None:
             raise RuntimeError(
                 "Google Cloud Text-to-Speech is unavailable. Install google-cloud-texttospeech "
-                "and configure GOOGLE_APPLICATION_CREDENTIALS to render Bulgarian audio."
+                "and configure GOOGLE_APPLICATION_CREDENTIALS to render Google audio."
             )
 
         client = self._get_google_client()
         response = client.synthesize_speech(
             input=google_api.SynthesisInput(text=text),
             voice=google_api.VoiceSelectionParams(
-                language_code=self.google_tts_config.bg_language_code,
+                language_code=language_code,
                 name=voice_name,
             ),
             audio_config=google_api.AudioConfig(
@@ -181,17 +206,28 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         if google_api is None:
             raise RuntimeError(
                 "Google Cloud Text-to-Speech is unavailable. Install google-cloud-texttospeech "
-                "and configure GOOGLE_APPLICATION_CREDENTIALS to render Bulgarian audio."
+                "and configure GOOGLE_APPLICATION_CREDENTIALS to render Google audio."
             )
         if self._google_client is None:
             try:
                 self._google_client = google_api.TextToSpeechClient()
             except Exception as exc:
                 raise RuntimeError(
-                    "Google Cloud Text-to-Speech is not configured for Bulgarian audio. "
+                    "Google Cloud Text-to-Speech is not configured. "
                     "Set GOOGLE_APPLICATION_CREDENTIALS to a service-account JSON file."
                 ) from exc
         return self._google_client
+
+    def _google_language_code(self, lang: str) -> str:
+        if lang == "bg":
+            return self.google_tts_config.bg_language_code
+        return self.google_tts_config.en_language_code
+
+    def _google_language_code_for_voice(self, lang: str, voice_name: str | None) -> str:
+        fallback = self._google_language_code(lang)
+        if not _should_route_google(lang, voice_name):
+            return fallback
+        return google_language_code_from_voice_name(voice_name or "", fallback=fallback)
 
 
 def build_default_audio_generator(
@@ -203,7 +239,7 @@ def build_default_audio_generator(
 ) -> Pyttsx3PodcastAudioGenerator:
     google_tts_config = GoogleTTSConfig.from_env()
     return Pyttsx3PodcastAudioGenerator(
-        voice_name=voice_name,
+        voice_name=voice_name or google_tts_config.en_voice_name,
         rate=rate,
         volume=volume,
         bg_voice_name=bg_voice_name or google_tts_config.bg_voice_name,
@@ -264,8 +300,24 @@ def _split_script_by_language(script_text: str) -> list[tuple[str, str]]:
     return segments
 
 
-def _is_google_bg_voice(voice_name: str | None) -> bool:
-    return bool(voice_name and voice_name.strip().lower().startswith("bg-bg-"))
+def _is_google_voice(
+    voice_name: str | None,
+    *,
+    language_code_prefix: str | None = None,
+) -> bool:
+    normalized_voice = (voice_name or "").strip().lower()
+    if not normalized_voice:
+        return False
+    if language_code_prefix is not None:
+        normalized_prefix = language_code_prefix.lower().rstrip("-")
+        return normalized_voice.startswith(f"{normalized_prefix}-")
+    return normalized_voice.startswith(("bg-bg-", "en-"))
+
+
+def _should_route_google(lang: str, voice_name: str | None) -> bool:
+    if lang == "bg":
+        return _is_google_voice(voice_name, language_code_prefix="bg-bg")
+    return _is_google_voice(voice_name, language_code_prefix="en")
 
 
 @contextmanager

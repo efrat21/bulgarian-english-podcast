@@ -192,6 +192,38 @@ class CliCommandTests(unittest.TestCase):
         self.assertIn("HTML source: network", output)
         self.assertIn(f"Audio output: {expected_audio_path}", output)
 
+    def test_generate_audio_command_passes_voice_overrides_to_audio_factory(self) -> None:
+        fetcher = StubFetcher(self.article, self.html)
+        translator = StubTranslator(self.translation)
+        audio_generator = StubAudioGenerator(self.paths.audio)
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.KnigovishteArticleFetcher", return_value=fetcher):
+                with patch("knigovishte_podcast.cli.TranslationConfig.from_env", return_value=Mock()):
+                    with patch("knigovishte_podcast.cli.LangblyTranslator", return_value=translator):
+                        with patch(
+                            "knigovishte_podcast.cli.build_default_audio_generator",
+                            return_value=audio_generator,
+                        ) as audio_factory:
+                            exit_code = main(
+                                [
+                                    "generate-audio",
+                                    "--url",
+                                    self.article.source_url,
+                                    "--refresh",
+                                    "--en-voice",
+                                    "en-US-Standard-C",
+                                    "--bg-voice",
+                                    "bg-BG-Standard-B",
+                                ]
+                            )
+
+        self.assertEqual(exit_code, 0)
+        audio_factory.assert_called_once_with(
+            voice_name="en-US-Standard-C",
+            bg_voice_name="bg-BG-Standard-B",
+        )
+
     def test_generate_audio_command_skips_duplicate_article(self) -> None:
         fetcher = StubFetcher(self.article, self.html)
         existing_audio_path = self.paths.audio / "already-generated.wav"
@@ -259,7 +291,6 @@ class CliCommandTests(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("Starting local web UI at http://127.0.0.1:5050", output)
         self.assertIn(f"Output folder: {self.paths.data}", output)
-
 
 if __name__ == "__main__":
     unittest.main()

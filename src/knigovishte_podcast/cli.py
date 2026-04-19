@@ -115,7 +115,10 @@ def _add_voice_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--en-voice",
         metavar="NAME",
-        help="Local pyttsx3 voice name (or substring) to use for English lines.",
+        help="English voice to use for English lines. Defaults to Google Cloud "
+        "en-US-Standard-F; other valid Google English voice names also stay on the "
+        "Google path, while local pyttsx3 voice names (or substrings) still work "
+        "when passed explicitly.",
     )
     parser.add_argument(
         "--bg-voice",
@@ -354,7 +357,6 @@ def _run_web(args: argparse.Namespace) -> int:
     print(f"Output folder: {paths.data}")
     app.run(host=args.host, port=args.port, debug=False)
     return 0
-
 
 def _resolve_article_url(args: argparse.Namespace, paths: ProjectPaths) -> str:
     """
