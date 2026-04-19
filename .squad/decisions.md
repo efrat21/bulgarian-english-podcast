@@ -870,3 +870,57 @@ Implementation matches all claims. Tests are comprehensive and pass cleanly. App
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+
+### 24. Lambert Review: Issue #12 — Windows COM Initialization in TTS (2026-04-19T115408Z)
+**Reviewer:** Lambert (Tester)  
+**Date:** 2026-04-19  
+**Artifact:** PR #13 (commit 5543082), merged to master  
+**Verdict:** ✅ APPROVED
+
+## What was the bug
+
+Flask request threads on Windows never called CoInitialize, so when the
+filter-based web flow reached pyttsx3 (which uses SAPI via COM), Windows
+returned HRESULT 0x800401F0 (CO_E_NOTINITIALIZED).
+
+## What the fix does
+
+A _windows_com_initialized() context manager now wraps every call to
+_synthesize_local_segment.  It calls CoInitialize / CoUninitialize
+through ctypes.windll.ole32, handling three HRESULT cases:
+
+| HRESULT | Meaning | Action |
+|---------|---------|--------|
+|   | Fresh init | Uninitialize on exit |
+| 1 (S_FALSE) | Already initialized on this thread | Uninitialize (balanced) |
+|  x80010106 (RPC_E_CHANGED_MODE) | Different threading model | Skip uninitialize |
+| Other | Unexpected failure | Raise OSError |
+
+On non-Windows (ctypes.windll absent) the context manager is a no-op.
+
+## Evidence supporting approval
+
+1. **Root cause correctly identified.** The error code in the issue matches
+   CO_E_NOTINITIALIZED; the fix initializes COM before engine creation.
+2. **Fix applied at the right boundary.** _synthesize_local_segment is the
+   single point of entry for local TTS.  Both single-voice and bilingual-local
+   paths go through it; Google TTS (no COM) is unaffected.
+3. **HRESULT edge cases handled.** Already-initialized and changed-mode cases
+   won't double-uninitialize or crash.
+4. **Cross-platform safe.** _ole32() returns None on non-Windows →
+   context manager yields immediately.
+5. **Focused tests added.** WindowsComInitializationTests covers the
+   init/uninit lifecycle and the changed-mode skip path.
+   	est_generate_initializes_com_for_local_tts verifies the context manager
+   is invoked during generation.
+6. **No regressions.** All 85 tests pass (0.274 s).
+
+## Non-blocking observations
+
+- **Missing test for COM failure path:** The OSError branch (unexpected
+  HRESULT) has no unit test.  Low risk, but worth adding later.
+- **Missing test for non-Windows no-op:** The ole32 is None branch is
+  untested.  Trivially correct, but a one-liner mock test would close the gap.
+- **Per-segment COM init in bilingual mode:** Each local segment enters/exits
+  the COM context independently.  COM init is ref-counted so this is correct,
+  just mildly redundant.  Not worth changing now.

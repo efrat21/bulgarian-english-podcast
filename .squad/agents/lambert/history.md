@@ -47,3 +47,6 @@
 📌 Team update (2026-04-18T04:53:56Z): Google TTS integration complete — Bulgarian voice now available via pluggable provider system; local pyttsx3 (English-only) remains default, Google Cloud (Bulgarian + English) opt-in via CLI flag; live verification pending GOOGLE_APPLICATION_CREDENTIALS setup. Implemented by Parker, approved by Lambert
 
 📌 Team update (2026-04-19T133500Z): Force-push resolution complete — commit a48e3f0 (Remove sentence prefixes from podcast scripts) published to origin/master. User explicitly authorized remote history rewrite. Local and remote now aligned at a48e3f0. Publication successful. Decision #25 recorded in decisions.md. Coordinated by Scribe
+
+📌 Team update (20260419T115408Z): Issue #12 Windows COM initialization in TTS reviewed and approved (PR #13, commit 5543082). Context manager wraps all local TTS calls with CoInitialize/CoUninitialize handling; HRESULT edge cases properly managed (S_FALSE, RPC_E_CHANGED_MODE, failures). Cross-platform safe (no-op on non-Windows). All 85 tests pass. Minor observations: missing tests for COM failure path and non-Windows no-op branch (low risk). APPROVED FOR PUBLICATION. Decided by Lambert
+

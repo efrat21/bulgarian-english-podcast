@@ -29,3 +29,6 @@
 📌 Team update (2026-04-19T133500Z): Force-push authorized and executed — nested repo remote history rewritten from 3d1ebce → a48e3f0. Commit a48e3f0 (Remove sentence prefixes from podcast scripts) now published to origin/master. Local and remote aligned. Decision #25 recorded. Decided by efratmiyara-work
 
 📌 Team update (20260419T113723Z): Issue #11 completed — UI refinement (commit 116e9d9): artifact link behavior, progress messaging, section removal, category translation. Implemented by Bishop
+
+📌 Team update (20260419T115408Z): Issue #11 reopened follow-up resolved — Bishop refined web UI success messaging per user feedback (commit bdb149c). Simplified artifact linking behavior, improved progress/completion messaging, removed redundant sections, translated category labels to English. Implementation tested and merged to master. Issue closed. Decided by Bishop
+
