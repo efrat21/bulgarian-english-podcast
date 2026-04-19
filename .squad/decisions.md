@@ -363,6 +363,81 @@ No code changes required. Current defaults are correct.
 | #8 | Bishop | Assigned; awaiting pickup | `squad`, `squad:bishop` |
 | #9 | TBD | Architecture pending | `squad` |
 
+### 20. Ripley Decision: Issue #9 Architecture Clarification — Web-Based UI (2026-04-19T120000Z)
+**Owner:** Ripley  
+**Status:** Architecture Decided, Ready for Implementation
+
+**Context:** User clarified preference: "Simple local web app in the browser"
+
+**UI Type Decision:** Web-based (HTML + vanilla JavaScript frontend with Flask backend)
+
+**v1 Minimum Viable Scope:**
+
+**Backend API (Flask)**
+- Single endpoint: `POST /generate` — accepts optional URL, triggers podcast generation
+- Fallback logic: If URL empty, use latest article from cache
+- Response: Status (success/skip), audio file path, script path
+- No authentication required (local-only app)
+
+**Frontend (HTML + Vanilla JavaScript)**
+- Form with optional URL input field
+- Submit button to trigger generation
+- Status message (generating, success, error)
+- Hyperlink to output folder (`my-project/data/audio/`)
+- Display of generated file path
+- No advanced features (history, search, playback, file browser) in v1
+
+**Integration**
+- Reuse existing pipeline from `my-project.src.knigovishte_podcast.pipeline`
+- No changes to core pipeline logic
+- API layer sits on top, does not modify pipeline
+
+---
+
+**Routing Decision: Bishop (Backend Dev)**
+
+**Rationale:**
+- Backend API orchestration is Bishop's domain (web ingestion, pipeline integration, data flow)
+- Web API design and Flask setup is backend responsibility
+- Podcast generation logic already exists in pipeline; Bishop wraps it
+
+**Frontend:** Bishop handles v1 (simple vanilla JS + HTML). Defer to specialist if UI complexity grows.
+
+**Testing:** Lambert (Tester) will write test cases for API endpoints once Bishop defines schema.
+
+---
+
+**Architecture Guidance:**
+- API Framework: Flask (lightweight, not FastAPI)
+- Reuse existing pipeline object; no refactoring needed
+- Local-only; no multi-user/session management
+- Artifact linking: Use file:// URLs or direct Windows paths
+
+**Benefits:**
+- ✅ Solves user's need: Simple browser UI to trigger generation and access outputs
+- ✅ Minimal new code: Wraps existing pipeline, no translation/TTS changes
+- ✅ Clear ownership: One owner (Bishop) for API shape
+- ✅ Testable: API contract well-defined, easy to test
+- ✅ Future-ready: Frontend can scale if richer UI needed later
+
+**Next Steps:**
+1. Bishop picks up issue #9 with `squad:bishop` label
+2. Bishop designs API schema (`/generate` endpoint request/response)
+3. Lambert writes test cases for the schema
+4. Bishop implements Flask app + frontend
+5. Ripley reviews final implementation
+
+**Issue #9 Status:** Architecture clear, owner assigned, scope bounded, ready for implementation.
+
+---
+
+**Summary:**
+
+| Issue | Owner | Status | Labels |
+|-------|-------|--------|--------|
+| #8 | Bishop | Assigned; awaiting pickup | `squad`, `squad:bishop` |
+| #9 | Bishop | Architecture decided; ready for pickup | `squad:bishop` |
+
 ## Governance
 
 - All meaningful changes require team consensus

@@ -46,6 +46,15 @@
 - Cross-agent context updated in Bishop and Ripley histories
 - Labels: #8 => `squad`, `squad:bishop`; #9 => `squad` (pending clarification)
 
+📌 **Ripley Issue #9 Architecture Clarification — Web-Based UI**
+- User clarified preference: "Simple local web app in the browser"
+- Decided: Web-based (Flask backend + HTML/vanilla JS frontend)
+- v1 scope: Single `/generate` endpoint, optional URL input, fallback to latest, artifact linking
+- Owner: Bishop (Backend Dev); wraps existing pipeline, no core logic changes
+- Testing: Lambert will write API endpoint test cases once Bishop defines schema
+- Status: Architecture clear, owner assigned, ready for implementation
+- Label change: Issue #9 now routable to `squad:bishop`
+
 
 ## Recent Session (2026-04-13T180001Z)
 
