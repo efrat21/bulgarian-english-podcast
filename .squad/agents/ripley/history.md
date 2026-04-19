@@ -5,7 +5,31 @@
 - **Stack:** Python 3.11+ stdlib-first CLI scaffold
 - **Created:** 2026-04-13T17:28:16.452Z
 
-## Learnings
+## Core Context
+
+**Architecture:**
+- App scaffold at `my-project\src\knigovishte_podcast\` with fetcher, translator, script builder, audio generator
+- Stable artifact paths: `my-project\data\{articles,scripts,audio,rss}`
+- Nested repo pattern: `.squad/` at root for coordination, `my-project/` as independent git repo
+- CLI-first, Python 3.11+ stdlib-first approach
+
+**Key Decisions:**
+- (D#3) Initial project structure: Python stdlib-first, data-local persistence, pipeline boundaries stable
+- (D#13) Nested repository hygiene: `.squad/` coordination separate from app repo
+- (D#14) CI packaging shape: Ruff lint, mypy type-check, unittest, build validation
+- (D#32) Google English voice routing: treat all `en-*` Google voices consistently (voice-name-first language derivation)
+
+**Active Work:**
+- Issue #14 (Google English voice): APPROVED — `en-US-Standard-F` selected, en-* routing consistent, regression coverage complete
+- Assigned issues: #9 (local web UI, Bishop), #8 (artifact dedup, Bishop)
+
+**Learnings (Historical):**
+- English TTS voice routing must support en-* pattern broadly, not just en-US
+- Regression coverage for bilingual flows: title + body segments make multiple Google calls
+- Copilot instructions should be minimal and actionable (not speculative)
+- Squad decisions recorded in inbox/ for post-session merge and cross-agent propagation
+
+## Session Archive
 
 - English Google TTS routing in `my-project\src\knigovishte_podcast\services\tts.py` must treat valid `en-*` Google voice names as Google voices, not local `pyttsx3` fallbacks.
 - For Google voice overrides, derive the request `language_code` from the selected voice name (for example `en-GB-Standard-A` -> `en-GB`) so override routing stays consistent with the provider path.
