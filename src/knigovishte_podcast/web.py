@@ -81,17 +81,7 @@ PAGE_TEMPLATE = """
 
     {% if result %}
       <section class="panel success">
-        <h2>{{ result.heading }}</h2>
         <p><strong>Your episode is ready.</strong></p>
-        <p>{{ result.message }}</p>
-        <ul>
-          <li><strong>Article URL:</strong> <a href="{{ result.article_url }}">{{ result.article_url }}</a></li>
-          {% if result.fetched_title %}<li><strong>Bulgarian title:</strong> {{ result.fetched_title }}</li>{% endif %}
-          {% if result.translated_title %}<li><strong>English title:</strong> {{ result.translated_title }}</li>{% endif %}
-          {% for artifact in result.artifacts %}
-            <li><strong>{{ artifact.label }}:</strong> <code>{{ artifact.path }}</code></li>
-          {% endfor %}
-        </ul>
       </section>
     {% endif %}
 

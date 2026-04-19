@@ -144,7 +144,7 @@ Then open `http://127.0.0.1:5000` in your browser.
 - Paste a Knigovishte article URL, or leave the field blank to use the latest article automatically.
 - When the URL is blank, you can optionally narrow selection with minimum/maximum sentence length and category.
 - Submit the form to run the existing pipeline; the page shows a working message while generation is in progress.
-- When the run finishes, the page confirms that the episode is ready and keeps only a single link to the local output folder under `data\`.
+- When the run finishes, the page only shows `Your episode is ready.` and keeps a single link to the local output folder under `data\`.
 
 ## Quality checks
 

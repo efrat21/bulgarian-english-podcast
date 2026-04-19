@@ -73,10 +73,11 @@ class WebUiTests(unittest.TestCase):
         pipeline_factory.assert_called_once_with(paths=self.paths, use_cached_html=False)
         mock_pipeline.run.assert_called_once_with(self.article.source_url)
         page = response.get_data(as_text=True)
-        self.assertIn("Podcast artifacts generated", page)
         self.assertIn("Your episode is ready.", page)
-        self.assertIn("Used the URL you entered.", page)
-        self.assertIn(str(self.plan.audio_path.resolve()), page)
+        self.assertNotIn("Podcast artifacts generated", page)
+        self.assertNotIn("Used the URL you entered.", page)
+        self.assertNotIn(str(self.plan.audio_path.resolve()), page)
+        self.assertNotIn("Article URL:", page)
         self.assertNotIn(f'href="{self.plan.audio_path.resolve().as_uri()}"', page)
 
     def test_post_uses_latest_article_when_url_is_blank(self) -> None:
@@ -93,10 +94,9 @@ class WebUiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         selector.select_article.assert_called_once_with()
         mock_pipeline.run.assert_called_once_with(self.article.source_url)
-        self.assertIn(
-            "No URL was provided, so the latest article was selected automatically.",
-            response.get_data(as_text=True),
-        )
+        page = response.get_data(as_text=True)
+        self.assertIn("Your episode is ready.", page)
+        self.assertNotIn("No URL was provided, so the latest article was selected automatically.", page)
 
     def test_post_uses_filters_when_url_is_blank(self) -> None:
         mock_pipeline = Mock()
@@ -117,9 +117,11 @@ class WebUiTests(unittest.TestCase):
             article_filter=ArticleFilter(min_length=5, max_length=20, category="nauka")
         )
         mock_pipeline.run.assert_called_once_with(self.article.source_url)
-        self.assertIn(
+        page = response.get_data(as_text=True)
+        self.assertIn("Your episode is ready.", page)
+        self.assertNotIn(
             "No URL was provided, so a matching article was selected from the requested filters.",
-            response.get_data(as_text=True),
+            page,
         )
 
     def test_post_reports_invalid_filter_range(self) -> None:
@@ -145,7 +147,7 @@ class WebUiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         page = response.get_data(as_text=True)
-        self.assertIn("Existing audio reused", page)
         self.assertIn("Your episode is ready.", page)
-        self.assertIn(str(existing_audio_path.resolve()), page)
+        self.assertNotIn("Existing audio reused", page)
+        self.assertNotIn(str(existing_audio_path.resolve()), page)
         self.assertNotIn(f'href="{existing_audio_path.resolve().as_uri()}"', page)
