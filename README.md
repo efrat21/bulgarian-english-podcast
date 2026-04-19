@@ -143,6 +143,31 @@ knigovishte-podcast run --filter filters.json
 knigovishte-podcast web --port 5000
 ```
 
+## Getting the local RSS feed into Podcast Addict (Android)
+
+Run from `my-project\` after you already have at least one generated audio file in `data\audio\`:
+
+```powershell
+python main.py local-rss-delivery
+```
+
+- The command rebuilds `data\rss\podcast.xml`, stages episode files under `data\rss\episodes\`, starts the local feed server, and prints the feed URL to use on your phone.
+- If the printed host name is not reachable from Android, get your computer's Wi-Fi IPv4 address with `ipconfig` and rerun with `--public-host <LAN-IP>`. Use the Wi-Fi adapter address, not `127.0.0.1`.
+- Keep the command running while Podcast Addict connects.
+
+In Podcast Addict on Android:
+
+1. Make sure the phone and computer are on the same trusted Wi-Fi network.
+2. Open **Podcast Addict** → **+** → **RSS feed**.
+3. Paste the printed feed URL, usually `http://<LAN-IP>:<current-port>/podcast.xml`.
+4. Subscribe and refresh.
+
+Important local-network limits:
+
+- This feed is for a trusted LAN only. It is not a hosted or public internet feed.
+- If the computer sleeps, changes networks, or you stop the local RSS command, Podcast Addict will no longer be able to refresh or download episodes.
+- The current delivery path reuses local staged audio files directly; the first supported enclosure path serves the generated `.wav` output.
+
 ## Local web UI
 
 Run from `my-project\`:
@@ -179,7 +204,7 @@ GitHub Actions now runs the same lint, type-check, test, and package-build flow 
 - `data\audio\{slug}.wav` — generated audio
 - `data\audio\manifest.json` — durable article-content hash registry used to skip duplicate audio generation
 - `data\rss\podcast.xml` — generated local RSS feed for podcast clients
-- `data\rss\episodes\{filename}` — staged audio files served by the local RSS command
+- `data\rss\episodes\{filename}` — staged audio files served by the local RSS command (`.wav` today; podcast-friendly formats such as `.mp3`, `.m4a`, and `.aac` are also supported when present)
 
 The CLI is local-first: cached article HTML is reused unless `--refresh` is passed. Once an article has produced audio, later `run` or `generate-audio` calls for the same article content reuse the manifest entry and skip creating a duplicate `.wav`.
 
