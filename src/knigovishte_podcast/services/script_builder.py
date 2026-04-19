@@ -15,13 +15,18 @@ class PodcastScriptBuilder:
             "",
         ]
 
-        for _ in range(2):
+        for repeat_index in range(2):
             for english_sentence, bulgarian_sentence in zip(
                 translation.sentences_en, article.sentences_bg
             ):
                 lines.append(f"English: {english_sentence}")
                 lines.append(f"Bulgarian: {bulgarian_sentence}")
-            lines.append("")
+            if repeat_index == 0:
+                lines.append("")
+                lines.append("Let's hear that again.")
+                lines.append("Сега ще го повторим.")
+                lines.append("")
 
-        lines.append("That's the end of this episode. Thanks for listening.")
+        lines.append("")
+        lines.append("That's the end of this story. Thanks for listening!")
         return "\n".join(lines).strip()

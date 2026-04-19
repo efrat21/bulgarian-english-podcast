@@ -33,12 +33,15 @@ class PodcastScriptBuilderTests(unittest.TestCase):
                 "English: Second sentence.",
                 "Bulgarian: Второ изречение.",
                 "",
+                "Let's hear that again.",
+                "Сега ще го повторим.",
+                "",
                 "English: First sentence.",
                 "Bulgarian: Първо изречение.",
                 "English: Second sentence.",
                 "Bulgarian: Второ изречение.",
                 "",
-                "That's the end of this episode. Thanks for listening.",
+                "That's the end of this story. Thanks for listening!",
             ]
         )
 
