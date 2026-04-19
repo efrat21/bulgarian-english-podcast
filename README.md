@@ -15,6 +15,7 @@ Local-first Python CLI for turning a public Knigovishte article into:
 - `build-script` formats the bilingual episode script.
 - `generate-audio` renders the script to a local `.wav` file, using local `pyttsx3` for English and Google Cloud TTS for Bulgarian by default.
 - `run` executes the full fetch → translate → script → audio pipeline.
+- `web` starts a small local Flask UI for running the same pipeline in a browser.
 
 **NEW:** All commands now support filter-based article selection via `--filter` flag, allowing automatic selection of articles by length or category. Without explicit `--url`, the latest article is selected by default.
 
@@ -81,6 +82,7 @@ python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko
 python main.py run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 python main.py fetch --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --refresh
 python main.py generate-audio --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha" --en-voice "zira" --bg-voice "bg-BG-Standard-B"
+python main.py web
 ```
 
 ### With filter-based article selection
@@ -126,7 +128,22 @@ Package-style entry points also work after install:
 python -m knigovishte_podcast plan --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 knigovishte-podcast run --url "https://www.knigovishte.bg/vijte/1532-kolko-tezhi-edna-leka-muha"
 knigovishte-podcast run --filter filters.json
+knigovishte-podcast web --port 5000
 ```
+
+## Local web UI
+
+Run from `my-project\`:
+
+```powershell
+python main.py web
+```
+
+Then open `http://127.0.0.1:5000` in your browser.
+
+- Paste a Knigovishte article URL, or leave the field blank to use the latest article automatically.
+- Submit the form to run the existing pipeline.
+- The page shows the generated artifact paths and links to the output folder/files under `data\`.
 
 ## Quality checks
 

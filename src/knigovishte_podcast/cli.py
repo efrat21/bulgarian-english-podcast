@@ -72,6 +72,22 @@ def build_parser() -> argparse.ArgumentParser:
     _add_refresh_argument(run_parser)
     _add_voice_arguments(run_parser)
 
+    web_parser = subparsers.add_parser(
+        "web",
+        help="Start a local Flask web UI for running the pipeline in a browser.",
+    )
+    web_parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host interface for the local web server. Defaults to 127.0.0.1.",
+    )
+    web_parser.add_argument(
+        "--port",
+        type=int,
+        default=5000,
+        help="Port for the local web server. Defaults to 5000.",
+    )
+
     return parser
 
 
@@ -328,6 +344,18 @@ def _run_pipeline(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_web(args: argparse.Namespace) -> int:
+    from .web import create_app
+
+    paths = ProjectPaths.from_root()
+    paths.ensure()
+    app = create_app(paths)
+    print(f"Starting local web UI at http://{args.host}:{args.port}")
+    print(f"Output folder: {paths.data}")
+    app.run(host=args.host, port=args.port, debug=False)
+    return 0
+
+
 def _resolve_article_url(args: argparse.Namespace, paths: ProjectPaths) -> str:
     """
     Resolve the article URL from command line arguments.
@@ -378,9 +406,13 @@ def main(argv: list[str] | None = None) -> int:
             return _run_generate_audio(args)
         if args.command == "run":
             return _run_pipeline(args)
+        if args.command == "web":
+            return _run_web(args)
     except Exception as exc:
         if args.command == "run":
             print(f"Pipeline failed: {exc}")
+        elif args.command == "web":
+            print(f"Web failed: {exc}")
         else:
             print(f"{args.command.replace('-', ' ').title()} failed: {exc}")
         return 1

@@ -244,6 +244,22 @@ class CliCommandTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertIn("Pipeline failed: translator offline", stdout.getvalue())
 
+    def test_web_command_starts_local_ui(self) -> None:
+        stdout = io.StringIO()
+        mock_app = Mock()
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.web.create_app", return_value=mock_app) as create_app_mock:
+                with redirect_stdout(stdout):
+                    exit_code = main(["web", "--host", "127.0.0.1", "--port", "5050"])
+
+        self.assertEqual(exit_code, 0)
+        create_app_mock.assert_called_once_with(self.paths)
+        mock_app.run.assert_called_once_with(host="127.0.0.1", port=5050, debug=False)
+        output = stdout.getvalue()
+        self.assertIn("Starting local web UI at http://127.0.0.1:5050", output)
+        self.assertIn(f"Output folder: {self.paths.data}", output)
+
 
 if __name__ == "__main__":
     unittest.main()

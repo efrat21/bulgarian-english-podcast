@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+import shutil
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from knigovishte_podcast.config import ProjectPaths
+from knigovishte_podcast.models import Article, PodcastPlan, Translation
+from knigovishte_podcast.services.dedup import DuplicateArticleError
+from knigovishte_podcast.web import create_app
+
+
+class WebUiTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.workdir = Path(__file__).resolve().parent / "_artifacts" / self._testMethodName
+        if self.workdir.exists():
+            shutil.rmtree(self.workdir)
+        self.paths = ProjectPaths.from_root(self.workdir)
+        self.paths.ensure()
+
+        self.article = Article(
+            source_url="https://www.knigovishte.bg/vijte/42-test",
+            title_bg="Българско заглавие",
+            sentences_bg=("Едно изречение.",),
+        )
+        self.translation = Translation(
+            title_en="English Title",
+            sentences_en=("One sentence.",),
+        )
+        self.plan = PodcastPlan(
+            article=self.article,
+            translation=self.translation,
+            script_text="script",
+            script_path=self.paths.scripts / "vijte-42-test.txt",
+            audio_path=self.paths.audio / "vijte-42-test.wav",
+            article_html_path=self.paths.articles / "vijte-42-test.html",
+        )
+
+    def tearDown(self) -> None:
+        if self.workdir.exists():
+            shutil.rmtree(self.workdir)
+
+    def test_index_renders_form_and_output_folder(self) -> None:
+        client = create_app(self.paths).test_client()
+
+        response = client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        page = response.get_data(as_text=True)
+        self.assertIn("Article URL (optional)", page)
+        self.assertIn(str(self.paths.data), page)
+
+    def test_post_runs_pipeline_for_explicit_url(self) -> None:
+        mock_pipeline = Mock()
+        mock_pipeline.run.return_value = self.plan
+
+        with patch("knigovishte_podcast.web.pipeline", return_value=mock_pipeline) as pipeline_factory:
+            client = create_app(self.paths).test_client()
+            response = client.post("/", data={"url": self.article.source_url, "refresh": "on"})
+
+        self.assertEqual(response.status_code, 200)
+        pipeline_factory.assert_called_once_with(paths=self.paths, use_cached_html=False)
+        mock_pipeline.run.assert_called_once_with(self.article.source_url)
+        page = response.get_data(as_text=True)
+        self.assertIn("Podcast artifacts generated", page)
+        self.assertIn("Used the URL you entered.", page)
+        self.assertIn(str(self.plan.audio_path.resolve()), page)
+
+    def test_post_uses_latest_article_when_url_is_blank(self) -> None:
+        mock_pipeline = Mock()
+        mock_pipeline.run.return_value = self.plan
+        selector = Mock()
+        selector.select_article.return_value = self.article
+
+        with patch("knigovishte_podcast.web.pipeline", return_value=mock_pipeline):
+            with patch("knigovishte_podcast.web.ArticleSelector", return_value=selector):
+                client = create_app(self.paths).test_client()
+                response = client.post("/", data={"url": ""})
+
+        self.assertEqual(response.status_code, 200)
+        selector.select_article.assert_called_once_with()
+        mock_pipeline.run.assert_called_once_with(self.article.source_url)
+        self.assertIn(
+            "No URL was provided, so the latest article was selected automatically.",
+            response.get_data(as_text=True),
+        )
+
+    def test_post_reports_existing_audio_for_duplicate_article(self) -> None:
+        existing_audio_path = self.paths.audio / "existing.wav"
+        existing_audio_path.write_bytes(b"audio")
+        mock_pipeline = Mock()
+        mock_pipeline.run.side_effect = DuplicateArticleError(
+            article=self.article,
+            audio_path=existing_audio_path,
+        )
+
+        with patch("knigovishte_podcast.web.pipeline", return_value=mock_pipeline):
+            client = create_app(self.paths).test_client()
+            response = client.post("/", data={"url": self.article.source_url})
+
+        self.assertEqual(response.status_code, 200)
+        page = response.get_data(as_text=True)
+        self.assertIn("Existing audio reused", page)
+        self.assertIn(str(existing_audio_path.resolve()), page)

@@ -9,6 +9,7 @@ description = "Local-first scaffold for turning Knigovishte articles into biling
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "Flask>=3.0",
     "google-cloud-texttospeech>=2.31",
     "requests>=2.31",
     "python-dotenv>=1.0",
