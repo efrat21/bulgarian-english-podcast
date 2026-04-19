@@ -162,7 +162,7 @@
       "status": "done",
       "priority": "medium",
       "dependencies": ["local-rss-delivery"],
-      "notes": "Completed 2026-04-19 for issue #14. Reviewed Google Cloud en-US Standard voices A-J and selected en-US-Standard-F for a clear neutral female read at standard-tier pricing. Default audio flow now routes English and Bulgarian Google voice names through the same Google TTS path, with CLI/config overrides plus unittest coverage."
+      "notes": "Completed 2026-04-19 for issue #14. Reviewed Google Cloud en-US Standard voices A-J and selected en-US-Standard-F for a clear neutral female read at standard-tier pricing. Default audio flow now routes English and Bulgarian Google voice names through the same Google TTS path, with CLI/config overrides plus unittest coverage. Published to nested app repo origin/master in commit 4d1f36b; issue #14 closed automatically on push."
     }
   ]
 }

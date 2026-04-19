@@ -17,6 +17,8 @@
 - `my-project\src\knigovishte_podcast\services\rss.py` is the new backend seam for rebuilding the LAN RSS feed and serving it with stdlib HTTP primitives.
 - The `local-rss-delivery` CLI command prints a subscribable LAN URL, rebuilds delivery files from existing `data\audio\` artifacts, and keeps the first slice dependency-free by serving the current `.wav` output directly.
 - `my-project\tests\test_tts.py` bilingual Google-override regressions must assert per-segment synthesis calls, because `_split_script_by_language()` keeps English title and body as separate English segments around Bulgarian content.
+- English Google voice routing should treat any valid `en-*` Google voice name as a Google path, not only `en-US-*`; derive the `language_code` from the selected voice name and fall back through `GoogleTTSConfig` only when needed.
+- Key publication paths for issue #14 were `my-project\src\knigovishte_podcast\config.py`, `my-project\src\knigovishte_podcast\services\tts.py`, `my-project\src\knigovishte_podcast\cli.py`, `my-project\tests\test_tts.py`, and `my-project\tests\test_cli.py`; final published commit on nested app repo master was `4d1f36b`.
 
 ## Team Updates
 
