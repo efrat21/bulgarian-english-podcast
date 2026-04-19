@@ -495,6 +495,33 @@ git push --force origin master
 
 **Next Steps:**
 1. Bishop picks up issue #9 with `squad:bishop` label
+
+---
+
+### 26. Bishop — Issue #10 Local UI Gap Closure (2026-04-19)
+
+**Context:** Issue #10 required a local user interface with optional URL input, fallback filter parameters (length and category) when URL is blank, latest-article fallback when no filters are chosen, and an output-folder hyperlink.
+
+**Initial State:** Issue #9 shipped a Flask web UI with latest-article fallback and output-folder link, but the blank-URL flow lacked length/category filter controls required by issue #10.
+
+**Decision:** Complete issue #10 by adding the missing filter UI controls to the shipped web application.
+
+**Implementation:**
+- Added minimum/maximum sentence length inputs to the HTML form in `my-project/src/knigovishte_podcast/services/web_ui.py`
+- Added category selector control for filter-aware article selection
+- Blank-URL submissions now route through the article selector with category-aware Knigovishte category page matching
+- Invalid filter ranges (e.g., min > max) are rejected with user-facing error messages
+- Updated `my-project/README.md` and test suite (`my-project/tests/test_web_ui.py`) to document and verify new capabilities
+
+**Validation:** All checks passed:
+- `ruff check main.py src tests` ✅
+- `mypy main.py src` ✅
+- `python -m unittest discover -s tests -v` ✅
+- `python -m build` ✅
+
+**Publication:** Commit 0b2da15 published to `my-project` master.
+
+**Result:** Issue #10 scope now fully satisfied. Issue #10 closed.
 2. Bishop designs API schema (`/generate` endpoint request/response)
 3. Lambert writes test cases for the schema
 4. Bishop implements Flask app + frontend

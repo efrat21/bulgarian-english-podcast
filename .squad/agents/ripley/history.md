@@ -131,6 +131,8 @@
 
 📌 Team update (2026-04-19T091835Z): Issue #8 (artifact deduplication) completed by Bishop. Durable manifest-based dedup implemented; commit 93d31f9. Issue #9 (local web UI) architecture decided (Flask API + vanilla JS); ready for Bishop implementation. Both decisions merged to decisions.md by Scribe. Session complete.
 
+📌 Team update (20260419T104656Z): Issue #10 (local UI gap closure) completed by Bishop. Added missing filter controls (length range, category selector) to blank-URL flow. All validation and routing implemented. Commit 0b2da15 published. Issue #10 closed. Decided by Bishop
+
 
 📌 **Issue #6 Triage and Routing (Bulgarian Voice Bug)**
 - Assessed critical production issue: missing Bulgarian voice in bilingual podcast output
