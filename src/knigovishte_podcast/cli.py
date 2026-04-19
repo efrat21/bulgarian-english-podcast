@@ -7,6 +7,7 @@ from .config import ProjectPaths, TranslationConfig, episode_slug_from_url
 from .models import Article, Translation
 from .pipeline import pipeline as build_pipeline
 from .services.article_selector import ArticleFilter, ArticleSelector
+from .services.dedup import ArticleAudioManifest, DuplicateArticleError
 from .services.fetcher import KnigovishteArticleFetcher
 from .services.script_builder import PodcastScriptBuilder
 from .services.translator import LangblyTranslator
@@ -262,6 +263,7 @@ def _run_build_script(args: argparse.Namespace) -> int:
 def _run_generate_audio(args: argparse.Namespace) -> int:
     paths = ProjectPaths.from_root()
     paths.ensure()
+    article_manifest = ArticleAudioManifest.for_paths(paths)
 
     url = _resolve_article_url(args, paths) if not args.url else args.url
 
@@ -270,6 +272,11 @@ def _run_generate_audio(args: argparse.Namespace) -> int:
         url,
         use_cached_html=not args.refresh,
     )
+    existing_audio_path = article_manifest.find_existing_audio(article)
+    if existing_audio_path is not None:
+        _print_article_details(article, used_cached_html=used_cached_html, cache_path=cache_path)
+        _print_duplicate_audio(article, existing_audio_path)
+        return 0
     translation, translation_path = _translate_article(paths, article)
     script_text = PodcastScriptBuilder().build(article, translation)
     script_path = _script_output_path(paths, article.source_url)
@@ -281,6 +288,7 @@ def _run_generate_audio(args: argparse.Namespace) -> int:
         script_text,
         episode_slug_from_url(article.source_url),
     )
+    article_manifest.record(article, audio_path)
 
     _print_article_details(article, used_cached_html=used_cached_html, cache_path=cache_path)
     print(f"Translated title: {translation.title_en}")
@@ -296,15 +304,18 @@ def _run_pipeline(args: argparse.Namespace) -> int:
 
     # Determine the article URL: explicit --url or select by filter
     article_url = _resolve_article_url(args, paths)
-
-    plan = build_pipeline(
-        paths=paths,
-        use_cached_html=not args.refresh,
-        audio_generator=build_default_audio_generator(
-            voice_name=args.en_voice or None,
-            bg_voice_name=args.bg_voice or None,
-        ),
-    ).run(article_url)
+    try:
+        plan = build_pipeline(
+            paths=paths,
+            use_cached_html=not args.refresh,
+            audio_generator=build_default_audio_generator(
+                voice_name=args.en_voice or None,
+                bg_voice_name=args.bg_voice or None,
+            ),
+        ).run(article_url)
+    except DuplicateArticleError as exc:
+        _print_duplicate_audio(exc.article, exc.audio_path)
+        return 0
 
     print(f"Article URL: {plan.article.source_url}")
     print(f"Fetched title: {plan.article.title_bg}")
@@ -341,6 +352,13 @@ def _resolve_article_url(args: argparse.Namespace, paths: ProjectPaths) -> str:
     article = selector.select_article(article_filter)
     print(f"Selected article: {article.source_url}")
     return article.source_url
+
+
+def _print_duplicate_audio(article: Article, audio_path: Path) -> None:
+    print(f"Article URL: {article.source_url}")
+    print(f"Fetched title: {article.title_bg}")
+    print(f"Audio output: {audio_path}")
+    print("Skipping audio generation because this article was already used.")
 
 
 def main(argv: list[str] | None = None) -> int:

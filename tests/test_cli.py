@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from knigovishte_podcast.cli import main
 from knigovishte_podcast.config import ProjectPaths, episode_slug_from_url
 from knigovishte_podcast.models import Article, Translation
+from knigovishte_podcast.services.dedup import ArticleAudioManifest
 
 
 class StubFetcher:
@@ -190,6 +191,32 @@ class CliCommandTests(unittest.TestCase):
         output = stdout.getvalue()
         self.assertIn("HTML source: network", output)
         self.assertIn(f"Audio output: {expected_audio_path}", output)
+
+    def test_generate_audio_command_skips_duplicate_article(self) -> None:
+        fetcher = StubFetcher(self.article, self.html)
+        existing_audio_path = self.paths.audio / "already-generated.wav"
+        existing_audio_path.write_bytes(b"audio")
+        ArticleAudioManifest.for_paths(self.paths).record(self.article, existing_audio_path)
+        stdout = io.StringIO()
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.KnigovishteArticleFetcher", return_value=fetcher):
+                with patch(
+                    "knigovishte_podcast.cli.TranslationConfig.from_env",
+                    side_effect=AssertionError("translate should not run for duplicates"),
+                ):
+                    with patch(
+                        "knigovishte_podcast.cli.build_default_audio_generator",
+                        side_effect=AssertionError("audio generation should not run for duplicates"),
+                    ):
+                        with redirect_stdout(stdout):
+                            exit_code = main(["generate-audio", "--url", self.article.source_url])
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(fetcher.parse_html_calls, 1)
+        output = stdout.getvalue()
+        self.assertIn(f"Audio output: {existing_audio_path}", output)
+        self.assertIn("Skipping audio generation because this article was already used.", output)
 
     def test_fetch_command_reports_failure_and_returns_one(self) -> None:
         stdout = io.StringIO()

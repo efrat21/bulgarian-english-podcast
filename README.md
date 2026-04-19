@@ -147,8 +147,9 @@ GitHub Actions now runs the same lint, type-check, test, and package-build flow 
 - `data\scripts\{slug}.translation.txt` — translation artifact
 - `data\scripts\{slug}.txt` — bilingual podcast script
 - `data\audio\{slug}.wav` — generated audio
+- `data\audio\manifest.json` — durable article-content hash registry used to skip duplicate audio generation
 
-The CLI is local-first: cached article HTML is reused unless `--refresh` is passed.
+The CLI is local-first: cached article HTML is reused unless `--refresh` is passed. Once an article has produced audio, later `run` or `generate-audio` calls for the same article content reuse the manifest entry and skip creating a duplicate `.wav`.
 
 ## Architecture
 
@@ -165,6 +166,7 @@ Key code paths:
 
 - `src\knigovishte_podcast\cli.py` — command parsing and user-facing workflow
 - `src\knigovishte_podcast\pipeline.py` — end-to-end orchestration
+- `src\knigovishte_podcast\services\dedup.py` — article hash manifest for durable audio deduplication
 - `src\knigovishte_podcast\services\fetcher.py` — Knigovishte fetch + parse
 - `src\knigovishte_podcast\services\translator.py` — Langbly API adapter
 - `src\knigovishte_podcast\services\script_builder.py` — bilingual script formatter

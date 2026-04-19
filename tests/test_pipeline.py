@@ -15,6 +15,10 @@ from knigovishte_podcast.config import ProjectPaths, episode_slug_from_url
 from knigovishte_podcast.models import Article, PodcastPlan, Translation
 from knigovishte_podcast.pipeline import ArticleToPodcastPipeline
 from knigovishte_podcast.pipeline import pipeline as build_pipeline
+from knigovishte_podcast.services.dedup import (
+    ArticleAudioManifest,
+    DuplicateArticleError,
+)
 
 
 class StubFetcher:
@@ -110,6 +114,7 @@ class ArticleToPodcastPipelineTests(unittest.TestCase):
             script_builder=script_builder,
             audio_generator=audio_generator,
             paths=self.paths,
+            article_manifest=ArticleAudioManifest.for_paths(self.paths),
         )
 
         plan = sut.run(self.article.source_url)
@@ -138,10 +143,12 @@ class ArticleToPodcastPipelineTests(unittest.TestCase):
             script_builder=StubScriptBuilder(self.script_text),
             audio_generator=StubAudioGenerator(self.paths.audio),
             paths=self.paths,
+            article_manifest=ArticleAudioManifest.for_paths(self.paths),
         )
 
         sut.run(self.article.source_url)
-        sut.run(self.article.source_url)
+        with self.assertRaises(DuplicateArticleError):
+            sut.run(self.article.source_url)
 
         self.assertEqual(fetcher.fetch_html_calls, 1)
         self.assertEqual(fetcher.parse_html_calls, 2)
@@ -155,6 +162,7 @@ class ArticleToPodcastPipelineTests(unittest.TestCase):
             script_builder=StubScriptBuilder(self.script_text),
             audio_generator=audio_generator,
             paths=self.paths,
+            article_manifest=ArticleAudioManifest.for_paths(self.paths),
         )
 
         plan = sut.run(self.article.source_url)
@@ -162,6 +170,31 @@ class ArticleToPodcastPipelineTests(unittest.TestCase):
         self.assertEqual(fetcher.calls, [self.article.source_url])
         self.assertIsNone(plan.article_html_path)
         self.assertEqual(audio_generator.calls, [(self.script_text, episode_slug_from_url(self.article.source_url))])
+
+    def test_run_raises_duplicate_article_error_when_audio_already_exists(self) -> None:
+        existing_audio_path = self.paths.audio / "existing.wav"
+        existing_audio_path.write_bytes(b"audio")
+        article_manifest = ArticleAudioManifest.for_paths(self.paths)
+        article_manifest.record(self.article, existing_audio_path)
+        translator = StubTranslator(self.translation)
+        script_builder = StubScriptBuilder(self.script_text)
+        audio_generator = StubAudioGenerator(self.paths.audio)
+        sut = ArticleToPodcastPipeline(
+            fetcher=StubFetcher(self.article, "<html>cached article</html>"),
+            translator=translator,
+            script_builder=script_builder,
+            audio_generator=audio_generator,
+            paths=self.paths,
+            article_manifest=article_manifest,
+        )
+
+        with self.assertRaises(DuplicateArticleError) as ctx:
+            sut.run(self.article.source_url)
+
+        self.assertEqual(ctx.exception.audio_path, existing_audio_path)
+        self.assertEqual(translator.calls, [])
+        self.assertEqual(script_builder.calls, [])
+        self.assertEqual(audio_generator.calls, [])
 
 
 class PipelineFactoryTests(unittest.TestCase):
@@ -180,7 +213,7 @@ class PipelineFactoryTests(unittest.TestCase):
                             "knigovishte_podcast.pipeline.build_default_audio_generator",
                             return_value=audio_generator,
                         ) as audio_factory:
-                            sut = build_pipeline(paths=paths, translation_config=translation_config)
+                             sut = build_pipeline(paths=paths, translation_config=translation_config)
 
         translator_cls.assert_called_once_with(translation_config)
         audio_factory.assert_called_once_with()
@@ -189,6 +222,7 @@ class PipelineFactoryTests(unittest.TestCase):
         self.assertIs(sut.script_builder, script_builder)
         self.assertIs(sut.audio_generator, audio_generator)
         self.assertEqual(sut.paths, paths)
+        self.assertEqual(sut.article_manifest.manifest_path, paths.audio / "manifest.json")
         self.assertTrue(sut.use_cached_html)
 
 
@@ -243,6 +277,30 @@ class CliRunCommandTests(unittest.TestCase):
         self.assertIn("Translated title: English Title", output)
         self.assertIn(f"Script output: {plan.script_path}", output)
         self.assertIn(f"Audio output: {plan.audio_path}", output)
+
+    def test_run_command_reports_existing_audio_for_duplicate_article(self) -> None:
+        article = Article(
+            source_url="https://www.knigovishte.bg/vijte/42-test",
+            title_bg="Българско заглавие",
+            sentences_bg=("Едно изречение.",),
+        )
+        existing_audio_path = self.paths.audio / "vijte-42-test.wav"
+        existing_audio_path.write_bytes(b"audio")
+        stdout = io.StringIO()
+        mock_pipeline = Mock()
+        mock_pipeline.run.side_effect = DuplicateArticleError(
+            article=article,
+            audio_path=existing_audio_path,
+        )
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.build_pipeline", return_value=mock_pipeline):
+                with redirect_stdout(stdout):
+                    exit_code = main(["run", "--url", article.source_url])
+
+        self.assertEqual(exit_code, 0)
+        self.assertIn(f"Audio output: {existing_audio_path}", stdout.getvalue())
+        self.assertIn("Skipping audio generation because this article was already used.", stdout.getvalue())
 
 
 if __name__ == "__main__":

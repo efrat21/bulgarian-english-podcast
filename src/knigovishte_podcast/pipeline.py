@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from .config import ProjectPaths, TranslationConfig, episode_slug_from_url
 from .models import PodcastPlan
+from .services.dedup import ArticleAudioManifest, DuplicateArticleError
 from .services.fetcher import ArticleFetcher, KnigovishteArticleFetcher
 from .services.script_builder import PodcastScriptBuilder
 from .services.translator import ArticleTranslator, LangblyTranslator
@@ -17,17 +18,22 @@ class ArticleToPodcastPipeline:
     script_builder: PodcastScriptBuilder
     audio_generator: PodcastAudioGenerator
     paths: ProjectPaths
+    article_manifest: ArticleAudioManifest
     use_cached_html: bool = True
 
     def run(self, url: str) -> PodcastPlan:
         self.paths.ensure()
         article, article_html_path = self._load_article(url)
+        existing_audio_path = self.article_manifest.find_existing_audio(article)
+        if existing_audio_path is not None:
+            raise DuplicateArticleError(article=article, audio_path=existing_audio_path)
         translation = self.translator.translate(article)
         script_text = self.script_builder.build(article, translation)
         episode_slug = episode_slug_from_url(article.source_url)
         script_path = self.paths.scripts / f"{episode_slug}.txt"
         script_path.write_text(script_text, encoding="utf-8")
         audio_path = self.audio_generator.generate(script_text, episode_slug)
+        self.article_manifest.record(article, audio_path)
         return PodcastPlan(
             article=article,
             translation=translation,
@@ -64,6 +70,7 @@ def pipeline(
     translator: ArticleTranslator | None = None,
     script_builder: PodcastScriptBuilder | None = None,
     audio_generator: PodcastAudioGenerator | None = None,
+    article_manifest: ArticleAudioManifest | None = None,
     use_cached_html: bool = True,
 ) -> ArticleToPodcastPipeline:
     project_paths = paths or ProjectPaths.from_root()
@@ -76,5 +83,6 @@ def pipeline(
         script_builder=script_builder or PodcastScriptBuilder(),
         audio_generator=audio_generator or build_default_audio_generator(),
         paths=project_paths,
+        article_manifest=article_manifest or ArticleAudioManifest.for_paths(project_paths),
         use_cached_html=use_cached_html,
     )
