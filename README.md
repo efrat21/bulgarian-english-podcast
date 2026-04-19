@@ -114,7 +114,7 @@ Create a JSON file (e.g., `filters.json`) with optional filtering criteria:
 Supported filters:
 - `min_length`: Minimum number of sentences (null = no minimum)
 - `max_length`: Maximum number of sentences (null = no maximum)
-- `category`: Reserved for future category filtering (not yet implemented)
+- `category`: Category slug such as `obshtestvo`, `sviat`, `nauka`, `kultura`, `sport-i-zdrave`, or `pishat-ni`
 
 ### Testing
 
@@ -142,6 +142,7 @@ python main.py web
 Then open `http://127.0.0.1:5000` in your browser.
 
 - Paste a Knigovishte article URL, or leave the field blank to use the latest article automatically.
+- When the URL is blank, you can optionally narrow selection with minimum/maximum sentence length and category.
 - Submit the form to run the existing pipeline.
 - The page shows the generated artifact paths and links to the output folder/files under `data\`.
 
@@ -199,7 +200,7 @@ Key code paths:
 - English `pyttsx3` voice availability varies by machine and installed system voices.
 - Bulgarian synthesis depends on Google Cloud credentials and network access; the default configured voice is `bg-BG-Standard-B`.
 - Filter-based selection scans the Knigovishte listing page and fetches articles sequentially; performance depends on network and filter criteria.
-- Category filtering is reserved for future implementation when article metadata becomes available.
+- Category filtering uses the matching Knigovishte category listing page before any length-based scan.
 
 ## Packaging and deployment strategy
 

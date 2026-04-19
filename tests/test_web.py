@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from knigovishte_podcast.config import ProjectPaths
 from knigovishte_podcast.models import Article, PodcastPlan, Translation
+from knigovishte_podcast.services.article_selector import ArticleFilter
 from knigovishte_podcast.services.dedup import DuplicateArticleError
 from knigovishte_podcast.web import create_app
 
@@ -52,6 +53,8 @@ class WebUiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         page = response.get_data(as_text=True)
         self.assertIn("Article URL (optional)", page)
+        self.assertIn("Minimum length (sentences)", page)
+        self.assertIn("Category", page)
         self.assertIn(str(self.paths.data), page)
 
     def test_post_runs_pipeline_for_explicit_url(self) -> None:
@@ -88,6 +91,38 @@ class WebUiTests(unittest.TestCase):
             "No URL was provided, so the latest article was selected automatically.",
             response.get_data(as_text=True),
         )
+
+    def test_post_uses_filters_when_url_is_blank(self) -> None:
+        mock_pipeline = Mock()
+        mock_pipeline.run.return_value = self.plan
+        selector = Mock()
+        selector.select_article.return_value = self.article
+
+        with patch("knigovishte_podcast.web.pipeline", return_value=mock_pipeline):
+            with patch("knigovishte_podcast.web.ArticleSelector", return_value=selector):
+                client = create_app(self.paths).test_client()
+                response = client.post(
+                    "/",
+                    data={"url": "", "min_length": "5", "max_length": "20", "category": "nauka"},
+                )
+
+        self.assertEqual(response.status_code, 200)
+        selector.select_article.assert_called_once_with(
+            article_filter=ArticleFilter(min_length=5, max_length=20, category="nauka")
+        )
+        mock_pipeline.run.assert_called_once_with(self.article.source_url)
+        self.assertIn(
+            "No URL was provided, so a matching article was selected from the requested filters.",
+            response.get_data(as_text=True),
+        )
+
+    def test_post_reports_invalid_filter_range(self) -> None:
+        client = create_app(self.paths).test_client()
+
+        response = client.post("/", data={"url": "", "min_length": "10", "max_length": "5"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Minimum length cannot be greater than maximum length.", response.get_data(as_text=True))
 
     def test_post_reports_existing_audio_for_duplicate_article(self) -> None:
         existing_audio_path = self.paths.audio / "existing.wav"

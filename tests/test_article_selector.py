@@ -177,6 +177,32 @@ class ArticleSelectorTests(unittest.TestCase):
             self.assertEqual(result, second_article)
             self.assertEqual(mock_fetcher.fetch.call_count, 2)
 
+    def test_select_article_uses_category_listing_when_requested(self) -> None:
+        mock_fetcher = MagicMock()
+        expected_article = Article(
+            source_url="https://www.knigovishte.bg/vijte/5678-category-article",
+            title_bg="Category Article",
+            sentences_bg=("Sentence 1.", "Sentence 2."),
+        )
+        mock_fetcher.fetch.return_value = expected_article
+
+        selector = ArticleSelector(fetcher=mock_fetcher)
+        article_filter = ArticleFilter(category="nauka")
+
+        with patch.object(selector, "_fetch_article_list") as mock_list:
+            mock_list.return_value = [
+                ArticleListItem(
+                    url="https://www.knigovishte.bg/vijte/5678-category-article",
+                    title="Category Article",
+                ),
+            ]
+
+            result = selector.select_article(article_filter=article_filter)
+
+            self.assertEqual(result, expected_article)
+            mock_list.assert_called_once_with("https://www.knigovishte.bg/vijte/category/nauka")
+            mock_fetcher.fetch.assert_called_once_with(expected_article.source_url)
+
     def test_select_article_raises_when_no_match_found(self) -> None:
         mock_fetcher = MagicMock()
         short_article = Article(
@@ -201,6 +227,14 @@ class ArticleSelectorTests(unittest.TestCase):
                 selector.select_article(article_filter=article_filter, max_scan=5)
 
             self.assertIn("No article matching", str(ctx.exception))
+
+    def test_select_article_rejects_unknown_category(self) -> None:
+        selector = ArticleSelector(fetcher=MagicMock())
+
+        with self.assertRaises(ValueError) as ctx:
+            selector.select_article(article_filter=ArticleFilter(category="unknown-category"))
+
+        self.assertIn("Unsupported category", str(ctx.exception))
 
 
 if __name__ == "__main__":

@@ -11,6 +11,16 @@ from urllib.request import Request, urlopen
 from ..models import Article
 from .fetcher import KnigovishteArticleFetcher
 
+KNOWN_CATEGORIES: tuple[tuple[str, str], ...] = (
+    ("obshtestvo", "Общество"),
+    ("sviat", "Свят"),
+    ("nauka", "Наука"),
+    ("kultura", "Култура"),
+    ("sport-i-zdrave", "Спорт и здраве"),
+    ("pishat-ni", "Пишат ни"),
+)
+KNOWN_CATEGORY_SLUGS = {slug for slug, _label in KNOWN_CATEGORIES}
+
 
 @dataclass(frozen=True)
 class ArticleFilter:
@@ -40,6 +50,17 @@ class ArticleFilter:
             category=data.get("category"),
         )
 
+    def category_slug(self) -> str | None:
+        if self.category is None:
+            return None
+
+        normalized = self.category.strip().casefold().replace("_", "-").replace(" ", "-")
+        if not normalized:
+            return None
+
+        category_map = {label.casefold(): slug for slug, label in KNOWN_CATEGORIES}
+        return category_map.get(normalized, normalized)
+
     def matches(self, article: Article) -> bool:
         """Check if article matches this filter."""
         sentence_count = len(article.sentences_bg)
@@ -50,8 +71,7 @@ class ArticleFilter:
         if self.max_length is not None and sentence_count > self.max_length:
             return False
 
-        # Category matching would require additional article metadata
-        # For now, we only filter by length
+        # Category routing is handled by choosing the category listing page up front.
         return True
 
 
@@ -121,7 +141,7 @@ class ArticleSelector:
         If no filter is provided, returns the latest article.
         Scans up to max_scan articles from the listing page.
         """
-        listing_url = "https://www.knigovishte.bg/vijte"
+        listing_url = self._listing_url(article_filter)
         article_items = self._fetch_article_list(listing_url)
 
         if not article_items:
@@ -150,6 +170,20 @@ class ArticleSelector:
         raise ValueError(
             f"No article matching the filter criteria found in the first {scanned} articles."
         )
+
+    def _listing_url(self, article_filter: ArticleFilter | None) -> str:
+        base_url = "https://www.knigovishte.bg/vijte"
+        if article_filter is None:
+            return base_url
+
+        category_slug = article_filter.category_slug()
+        if category_slug is None:
+            return base_url
+
+        if category_slug not in KNOWN_CATEGORY_SLUGS:
+            raise ValueError(f"Unsupported category: {article_filter.category}")
+
+        return f"{base_url}/category/{category_slug}"
 
     def _fetch_article_list(self, listing_url: str) -> list[ArticleListItem]:
         """Fetch the article listing page and extract article links."""

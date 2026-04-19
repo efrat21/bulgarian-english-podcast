@@ -7,7 +7,7 @@ from flask import Flask, render_template_string, request
 from .config import ProjectPaths
 from .models import PodcastPlan
 from .pipeline import pipeline
-from .services.article_selector import ArticleSelector
+from .services.article_selector import KNOWN_CATEGORIES, ArticleFilter, ArticleSelector
 from .services.dedup import DuplicateArticleError
 
 PAGE_TEMPLATE = """
@@ -20,13 +20,14 @@ PAGE_TEMPLATE = """
       body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.5; }
       form { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid #d0d7de; border-radius: 0.5rem; background: #f6f8fa; }
       label { font-weight: 600; }
-      input[type="text"] { width: 100%; padding: 0.6rem; }
+      input[type="text"], input[type="number"], select { width: 100%; padding: 0.6rem; }
       button { width: fit-content; padding: 0.65rem 1rem; }
       .panel { margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; }
       .success { background: #e6ffed; border: 1px solid #b7ebc6; }
       .error { background: #ffebe9; border: 1px solid #ffb3ad; }
       code { word-break: break-all; }
       ul { padding-left: 1.25rem; }
+      .filters { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
     </style>
   </head>
   <body>
@@ -36,6 +37,25 @@ PAGE_TEMPLATE = """
       <div>
         <label for="url">Article URL (optional)</label>
         <input id="url" name="url" type="text" value="{{ form.url }}" placeholder="Leave blank to use the latest Knigovishte article">
+      </div>
+      <div class="filters">
+        <div>
+          <label for="min_length">Minimum length (sentences)</label>
+          <input id="min_length" name="min_length" type="number" min="1" value="{{ form.min_length }}" placeholder="Any length">
+        </div>
+        <div>
+          <label for="max_length">Maximum length (sentences)</label>
+          <input id="max_length" name="max_length" type="number" min="1" value="{{ form.max_length }}" placeholder="Any length">
+        </div>
+      </div>
+      <div>
+        <label for="category">Category</label>
+        <select id="category" name="category">
+          <option value="">Any category</option>
+          {% for slug, label in categories %}
+            <option value="{{ slug }}" {% if form.category == slug %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
       </div>
       <label>
         <input name="refresh" type="checkbox" {% if form.refresh %}checked{% endif %}>
@@ -82,13 +102,21 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
     @app.route("/", methods=["GET", "POST"])
     def index() -> str:
         url_value = request.form.get("url", "").strip()
+        min_length_value = request.form.get("min_length", "").strip()
+        max_length_value = request.form.get("max_length", "").strip()
+        category_value = request.form.get("category", "").strip()
         refresh_requested = request.form.get("refresh") == "on"
         result: dict[str, object] | None = None
         error: str | None = None
 
         if request.method == "POST":
             try:
-                article_url, selection_message = _resolve_article_url(url_value)
+                article_url, selection_message = _resolve_article_url(
+                    url_value,
+                    min_length=min_length_value,
+                    max_length=max_length_value,
+                    category=category_value,
+                )
                 plan = pipeline(
                     paths=project_paths,
                     use_cached_html=not refresh_requested,
@@ -108,9 +136,16 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
 
         return render_template_string(
             PAGE_TEMPLATE,
-            form={"url": url_value, "refresh": refresh_requested},
+            form={
+                "url": url_value,
+                "min_length": min_length_value,
+                "max_length": max_length_value,
+                "category": category_value,
+                "refresh": refresh_requested,
+            },
             result=result,
             error=error,
+            categories=KNOWN_CATEGORIES,
             output_folder=str(project_paths.data),
             output_folder_uri=_path_uri(project_paths.data),
         )
@@ -118,12 +153,77 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
     return app
 
 
-def _resolve_article_url(raw_url: str) -> tuple[str, str]:
+def _resolve_article_url(
+    raw_url: str,
+    *,
+    min_length: str = "",
+    max_length: str = "",
+    category: str = "",
+) -> tuple[str, str]:
     if raw_url:
         return raw_url, "Used the URL you entered."
 
-    article = ArticleSelector().select_article()
-    return article.source_url, "No URL was provided, so the latest article was selected automatically."
+    article_filter = _build_article_filter(
+        min_length=min_length,
+        max_length=max_length,
+        category=category,
+    )
+    selector = ArticleSelector()
+    if article_filter is None:
+        article = selector.select_article()
+    else:
+        article = selector.select_article(article_filter=article_filter)
+    if article_filter is None:
+        return (
+            article.source_url,
+            "No URL was provided, so the latest article was selected automatically.",
+        )
+    return (
+        article.source_url,
+        "No URL was provided, so a matching article was selected from the requested filters.",
+    )
+
+
+def _build_article_filter(
+    *,
+    min_length: str,
+    max_length: str,
+    category: str,
+) -> ArticleFilter | None:
+    normalized_category = category.strip() or None
+    normalized_min = _parse_length("Minimum length", min_length)
+    normalized_max = _parse_length("Maximum length", max_length)
+
+    if (
+        normalized_min is not None
+        and normalized_max is not None
+        and normalized_min > normalized_max
+    ):
+        raise ValueError("Minimum length cannot be greater than maximum length.")
+
+    if normalized_min is None and normalized_max is None and normalized_category is None:
+        return None
+
+    return ArticleFilter(
+        min_length=normalized_min,
+        max_length=normalized_max,
+        category=normalized_category,
+    )
+
+
+def _parse_length(label: str, raw_value: str) -> int | None:
+    if not raw_value:
+        return None
+
+    try:
+        parsed = int(raw_value)
+    except ValueError as exc:
+        raise ValueError(f"{label} must be a whole number.") from exc
+
+    if parsed < 1:
+        raise ValueError(f"{label} must be at least 1.")
+
+    return parsed
 
 
 def _build_success_result(plan: PodcastPlan, selection_message: str) -> dict[str, object]:
