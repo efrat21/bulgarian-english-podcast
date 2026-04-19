@@ -37,6 +37,9 @@
 
 ## Team Updates
 
+📌 Team update (2026-04-19T091835Z): Issue #8 artifact deduplication (commit 93d31f9) reviewed and approved. Content-aware SHA-256 hashing, atomic manifest writes, early exit before TTS, comprehensive test coverage. Minor observations noted (force-regenerate flag, concurrent write edge case). Decided by Lambert
+
+
 📌 Team update (2026-04-18T04:53:56Z): Google TTS integration complete — Bulgarian voice now available via pluggable provider system; local pyttsx3 (English-only) remains default, Google Cloud (Bulgarian + English) opt-in via CLI flag; live verification pending GOOGLE_APPLICATION_CREDENTIALS setup. Implemented by Parker, approved by Lambert
 
 ## Recent Session (20260418T160000Z)

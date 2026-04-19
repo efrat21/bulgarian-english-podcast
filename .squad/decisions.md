@@ -463,6 +463,65 @@ No code changes required. Current defaults are correct.
 
 **Outcome:** Commit `93d31f9` ("fix: prevent duplicate audio generation (#8)"). Pipeline now idempotent with respect to article content. Issue #8 resolved.
 
+### 22. Bishop Decision: Issue #9 Local Web UI Implementation Shape (2026-04-19T091835Z)
+**Owner:** Bishop  
+**Status:** Architecture decided; ready for implementation
+
+**Decision:** Build a lightweight Flask app as the first browser-based local interface.
+
+**Design:**
+- Use Flask to serve a simple HTML form locally
+- Keep the UI as a thin wrapper around the existing `pipeline()` orchestration (no duplicated fetch/translate/audio logic)
+- Support one optional article URL field plus a refresh checkbox
+- When URL is blank, select the latest article automatically
+- Surface generated artifact paths and local output folder directly in the page
+
+**Rationale:**
+This keeps the first UI "boring and restartable" — one local process, one HTML form, the same pipeline already exercised by the CLI. Flask adds the minimum browser-serving layer without forcing a hosted-service architecture or inventing a second orchestration path.
+
+**Implementation Notes:**
+- Reuse existing `pipeline()` factory from `my-project.src.knigovishte_podcast.pipeline`
+- API endpoint: `POST /generate` with optional URL parameter
+- Response: Status (success/skip), audio path, script path
+- Artifact linking: Use file:// URLs or direct Windows paths
+- No authentication or multi-user management (local-only)
+
+**Next Steps:**
+1. Bishop defines API schema for `/generate` endpoint
+2. Lambert writes test cases for API endpoints
+3. Bishop implements Flask app + HTML form
+4. Ripley reviews final implementation
+
+### 23. Lambert Review: Issue #8 Artifact Deduplication — Approved (2026-04-19T091835Z)
+**Reviewer:** Lambert (Tester)  
+**Author:** Bishop  
+**Commit:** `93d31f9` (`fix: prevent duplicate audio generation (#8)`)  
+**Verdict:** ✅ APPROVED
+
+**What Was Reviewed:**
+New `dedup.py` service module, integrations into `pipeline.py` and `cli.py`, test coverage across all three layers, and README updates.
+
+**Evidence Supporting Approval:**
+
+1. **All 17 tests pass**, including 5 new dedup-specific tests
+2. **Content-based hashing** — dedup keys on title + sentences (SHA-256), not URL; correctly detects republished articles at different URLs
+3. **Atomic manifest writes** — uses `.json.tmp` + `replace()` to prevent corruption on interrupted writes
+4. **Audio file existence check** — `find_existing_audio()` verifies `.wav` exists before claiming dedup; pipeline regenerates if file is deleted
+5. **Early exit before costly work** — both pipeline and CLI bail BEFORE translator/TTS, saving API costs
+6. **Two code paths handled** — `generate-audio` checks manifest directly; `run` catches `DuplicateArticleError`. Both return exit code 0 and print existing path
+7. **Text normalization** — whitespace-collapsed before hashing, preventing false negatives from formatting changes
+8. **Manifest versioning** — uses `version: 1` for forward compatibility
+9. **README updated** — manifest file and dedup behavior documented in artifact layout and architecture sections
+
+**Minor Observations (Non-Blocking):**
+
+- **Missing edge-case test:** "audio file deleted but manifest entry exists" — code handles it correctly (regenerates), but lacks dedicated test; recommend follow-up
+- **No `--force-regenerate` flag** — users cannot override dedup for re-recording with different voices; out of scope but worth a future ticket
+- **Concurrent write risk** — two simultaneous CLI invocations could race; acceptable for single-user CLI tool
+
+**Conclusion:**
+The implementation is sound, well-tested, and correctly wired across all layers. Dedup logic is content-aware, durable, and fail-safe. Approved for merge.
+
 ## Governance
 
 - All meaningful changes require team consensus

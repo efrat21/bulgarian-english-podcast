@@ -133,6 +133,16 @@
       "priority": "high",
       "dependencies": ["pipeline-integration", "cli-main-entry"],
       "notes": "Completed for issue #8. Added data/audio/manifest.json keyed by a content hash of the Bulgarian title + sentences, short-circuited run and generate-audio when an article was already used, and covered the behavior with manifest, pipeline, and CLI tests."
+    },
+    {
+      "id": "local-web-ui",
+      "title": "Build a simple local web UI",
+      "description": "Add the smallest working browser-based UI for local users. Reuse the existing backend pipeline, support optional URL input with fallback to the latest article, and expose the output folder clearly.",
+      "owner": "Bishop",
+      "status": "done",
+      "priority": "high",
+      "dependencies": ["pipeline-integration", "cli-main-entry"],
+      "notes": "Completed for issue #9. Added a Flask-powered local UI plus a CLI web command, kept latest-article fallback when the URL field is blank, and documented/tested the flow."
     }
   ]
 }
