@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import ctypes
 import wave
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +13,8 @@ from ..config import GoogleTTSConfig, ProjectPaths
 
 AUDIO_FILE_EXTENSION = ".wav"
 DEFAULT_BG_GOOGLE_VOICE = "bg-BG-Standard-B"
+_COM_ALREADY_INITIALIZED = 1
+_COM_CHANGED_MODE = 0x80010106
 
 _BG_LINE_PREFIXES = ("Bulgarian:", "Bulgarian title:")
 _EN_LINE_PREFIXES = ("English:", "English title:")
@@ -98,19 +102,20 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         audio_path: Path,
         voice_name: str | None,
     ) -> None:
-        engine = pyttsx3.init()
-        try:
-            if self.rate is not None:
-                engine.setProperty("rate", self.rate)
-            if self.volume is not None:
-                engine.setProperty("volume", self.volume)
-            if voice_name is not None:
-                self._set_voice(engine, voice_name)
+        with _windows_com_initialized():
+            engine = pyttsx3.init()
+            try:
+                if self.rate is not None:
+                    engine.setProperty("rate", self.rate)
+                if self.volume is not None:
+                    engine.setProperty("volume", self.volume)
+                if voice_name is not None:
+                    self._set_voice(engine, voice_name)
 
-            engine.save_to_file(text, str(audio_path))
-            engine.runAndWait()
-        finally:
-            engine.stop()
+                engine.save_to_file(text, str(audio_path))
+                engine.runAndWait()
+            finally:
+                engine.stop()
 
     def _generate_bilingual(self, script_text: str, audio_path: Path) -> None:
         segments = _split_script_by_language(script_text)
@@ -261,6 +266,36 @@ def _split_script_by_language(script_text: str) -> list[tuple[str, str]]:
 
 def _is_google_bg_voice(voice_name: str | None) -> bool:
     return bool(voice_name and voice_name.strip().lower().startswith("bg-bg-"))
+
+
+@contextmanager
+def _windows_com_initialized():
+    """Initialize COM on the current thread before local Windows TTS usage."""
+    ole32 = _ole32()
+    if ole32 is None:
+        yield
+        return
+
+    hr = ole32.CoInitialize(None)
+    hr_code = hr & 0xFFFFFFFF
+    should_uninitialize = hr in (0, _COM_ALREADY_INITIALIZED)
+    if hr_code == _COM_CHANGED_MODE:
+        should_uninitialize = False
+    elif not should_uninitialize:
+        raise OSError(f"Failed to initialize Windows COM for local TTS (HRESULT 0x{hr_code:08X}).")
+
+    try:
+        yield
+    finally:
+        if should_uninitialize:
+            ole32.CoUninitialize()
+
+
+def _ole32():
+    windll = getattr(ctypes, "windll", None)
+    if windll is None:
+        return None
+    return windll.ole32
 
 
 def _concatenate_wav_files(input_paths: list[Path], output_path: Path) -> None:
