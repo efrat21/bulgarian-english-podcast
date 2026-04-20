@@ -174,13 +174,13 @@ class DailyEpisodeScheduler:
         except (ValueError, AttributeError):
             return True
 
-    def run_daemon(self, check_interval_seconds: int = 3600) -> None:
+    def run_daemon(self, check_interval_seconds: int = 86400) -> None:
         """
         Run as a daemon, checking daily for new episodes.
 
         Args:
             check_interval_seconds: How often to wake up and check if it's time.
-                                   Default is 3600 (1 hour).
+                                   Default is 86400 (1 day).
 
         This runs indefinitely. Use Ctrl+C to stop.
         """
