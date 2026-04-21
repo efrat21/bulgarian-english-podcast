@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -16,6 +16,12 @@ class ProjectPaths:
     articles: Path
     scripts: Path
     audio: Path
+    rss: Path = field(init=False)
+    rss_episodes: Path = field(init=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "rss", self.data / "rss")
+        object.__setattr__(self, "rss_episodes", self.data / "rss" / "episodes")
 
     @classmethod
     def from_root(cls, root: Path | None = None) -> "ProjectPaths":
@@ -30,7 +36,14 @@ class ProjectPaths:
         )
 
     def ensure(self) -> None:
-        for directory in (self.data, self.articles, self.scripts, self.audio):
+        for directory in (
+            self.data,
+            self.articles,
+            self.scripts,
+            self.audio,
+            self.rss,
+            self.rss_episodes,
+        ):
             directory.mkdir(parents=True, exist_ok=True)
 
 

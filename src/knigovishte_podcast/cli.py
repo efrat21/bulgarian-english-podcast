@@ -9,6 +9,7 @@ from .pipeline import pipeline as build_pipeline
 from .services.article_selector import ArticleFilter, ArticleSelector
 from .services.dedup import ArticleAudioManifest, DuplicateArticleError
 from .services.fetcher import KnigovishteArticleFetcher
+from .services.rss import LocalRSSService
 from .services.scheduler import DailyEpisodeScheduler
 from .services.script_builder import PodcastScriptBuilder
 from .services.translator import LangblyTranslator
@@ -106,6 +107,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="How often to wake up and check if it's time for a daily check (seconds). Default: 3600 (1 hour).",
     )
     _add_voice_arguments(daily_daemon_parser)
+
+    local_rss_parser = subparsers.add_parser(
+        "local-rss-delivery",
+        help="Stage a local RSS feed from existing audio artifacts and optionally serve it over the LAN.",
+    )
+    local_rss_parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host interface for the local RSS server. Defaults to 0.0.0.0.",
+    )
+    local_rss_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for the local RSS server. Defaults to 8000.",
+    )
+    local_rss_parser.add_argument(
+        "--public-host",
+        help="Reachable host name or LAN IP to embed in podcast feed URLs.",
+    )
+    local_rss_parser.add_argument(
+        "--no-serve",
+        action="store_true",
+        help="Rebuild the local RSS feed without starting the HTTP server.",
+    )
 
     return parser
 
@@ -417,6 +443,48 @@ def _run_daily_daemon(args: argparse.Namespace) -> int:
     scheduler.run_daemon(check_interval_seconds=args.interval)
     return 0
 
+
+def _run_local_rss_delivery(args: argparse.Namespace) -> int:
+    paths = ProjectPaths.from_root()
+    paths.ensure()
+    rss_service = LocalRSSService(paths)
+
+    if args.no_serve:
+        feed_plan = rss_service.rebuild_feed(
+            rss_service.build_public_base_url(
+                bind_host=args.host,
+                port=args.port,
+                public_host=args.public_host or None,
+            )
+        )
+        print(f"Staged RSS feed: {feed_plan.feed_path}")
+        print(f"Staged episodes: {len(feed_plan.staged_episode_paths)}")
+        print(f"Feed URL: {feed_plan.feed_url}")
+        print("RSS staging complete. Re-run without --no-serve to keep the local feed online.")
+        return 0
+
+    server = rss_service.create_server(host=args.host, port=args.port)
+    try:
+        actual_port = int(server.server_address[1])
+        feed_plan = rss_service.rebuild_feed(
+            rss_service.build_public_base_url(
+                bind_host=args.host,
+                port=actual_port,
+                public_host=args.public_host or None,
+            )
+        )
+        print(f"Staged RSS feed: {feed_plan.feed_path}")
+        print(f"Staged episodes: {len(feed_plan.staged_episode_paths)}")
+        print(f"Feed URL: {feed_plan.feed_url}")
+        print("Keep this command running while your podcast app connects.")
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("Local RSS server stopped.")
+    finally:
+        server.server_close()
+    return 0
+
+
 def _resolve_article_url(args: argparse.Namespace, paths: ProjectPaths) -> str:
     """
     Resolve the article URL from command line arguments.
@@ -473,6 +541,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_daily_check(args)
         if args.command == "daily-daemon":
             return _run_daily_daemon(args)
+        if args.command == "local-rss-delivery":
+            return _run_local_rss_delivery(args)
     except Exception as exc:
         if args.command == "run":
             print(f"Pipeline failed: {exc}")

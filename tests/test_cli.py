@@ -14,6 +14,7 @@ from knigovishte_podcast.cli import main
 from knigovishte_podcast.config import ProjectPaths, episode_slug_from_url
 from knigovishte_podcast.models import Article, Translation
 from knigovishte_podcast.services.dedup import ArticleAudioManifest
+from knigovishte_podcast.services.rss import FeedBuildResult
 
 
 class StubFetcher:
@@ -347,6 +348,71 @@ class CliCommandTests(unittest.TestCase):
             voice_name="en-GB-Standard-A",
             bg_voice_name="bg-BG-Standard-B",
         )
+
+    def test_local_rss_delivery_command_rebuilds_feed_without_serving(self) -> None:
+        stdout = io.StringIO()
+        feed_result = FeedBuildResult(
+            feed_path=self.paths.rss / "podcast.xml",
+            feed_url="http://127.0.0.1:8000/podcast.xml",
+            staged_episode_paths=(self.paths.rss_episodes / "episode.wav",),
+        )
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.LocalRSSService") as rss_service_cls:
+                rss_service = rss_service_cls.return_value
+                rss_service.build_public_base_url.return_value = "http://127.0.0.1:8000"
+                rss_service.rebuild_feed.return_value = feed_result
+
+                with redirect_stdout(stdout):
+                    exit_code = main(["local-rss-delivery", "--no-serve", "--public-host", "127.0.0.1"])
+
+        self.assertEqual(exit_code, 0)
+        rss_service_cls.assert_called_once_with(self.paths)
+        rss_service.build_public_base_url.assert_called_once_with(
+            bind_host="0.0.0.0",
+            port=8000,
+            public_host="127.0.0.1",
+        )
+        rss_service.rebuild_feed.assert_called_once_with("http://127.0.0.1:8000")
+        rss_service.create_server.assert_not_called()
+        output = stdout.getvalue()
+        self.assertIn(f"Staged RSS feed: {feed_result.feed_path}", output)
+        self.assertIn(f"Feed URL: {feed_result.feed_url}", output)
+
+    def test_local_rss_delivery_command_serves_feed_until_stopped(self) -> None:
+        stdout = io.StringIO()
+        feed_result = FeedBuildResult(
+            feed_path=self.paths.rss / "podcast.xml",
+            feed_url="http://127.0.0.1:8765/podcast.xml",
+            staged_episode_paths=(self.paths.rss_episodes / "episode.wav",),
+        )
+        mock_server = Mock()
+        mock_server.server_address = ("0.0.0.0", 8765)
+        mock_server.serve_forever.side_effect = KeyboardInterrupt()
+
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.LocalRSSService") as rss_service_cls:
+                rss_service = rss_service_cls.return_value
+                rss_service.create_server.return_value = mock_server
+                rss_service.build_public_base_url.return_value = "http://127.0.0.1:8765"
+                rss_service.rebuild_feed.return_value = feed_result
+
+                with redirect_stdout(stdout):
+                    exit_code = main(["local-rss-delivery", "--public-host", "127.0.0.1"])
+
+        self.assertEqual(exit_code, 0)
+        rss_service.create_server.assert_called_once_with(host="0.0.0.0", port=8000)
+        rss_service.build_public_base_url.assert_called_once_with(
+            bind_host="0.0.0.0",
+            port=8765,
+            public_host="127.0.0.1",
+        )
+        rss_service.rebuild_feed.assert_called_once_with("http://127.0.0.1:8765")
+        mock_server.serve_forever.assert_called_once_with()
+        mock_server.server_close.assert_called_once_with()
+        output = stdout.getvalue()
+        self.assertIn(f"Feed URL: {feed_result.feed_url}", output)
+        self.assertIn("Local RSS server stopped.", output)
 
 if __name__ == "__main__":
     unittest.main()
