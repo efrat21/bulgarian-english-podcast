@@ -56,6 +56,39 @@ class LocalRSSServiceTests(unittest.TestCase):
 
         self.assertIn("Generate audio before starting local RSS delivery", str(ctx.exception))
 
+    def test_build_public_base_url_uses_public_host_flag(self) -> None:
+        url = self.service.build_public_base_url(bind_host="0.0.0.0", port=8000, public_host="1.2.3.4")
+        self.assertEqual(url, "http://1.2.3.4:8000")
+
+    def test_build_public_base_url_uses_env_var(self) -> None:
+        os.environ["PODCAST_BASE_URL"] = "http://203.0.113.5:8000"
+        try:
+            url = self.service.build_public_base_url(bind_host="0.0.0.0", port=9000)
+        finally:
+            del os.environ["PODCAST_BASE_URL"]
+        self.assertEqual(url, "http://203.0.113.5:8000")
+
+    def test_build_public_base_url_env_var_strips_trailing_slash(self) -> None:
+        os.environ["PODCAST_BASE_URL"] = "http://203.0.113.5:8000/"
+        try:
+            url = self.service.build_public_base_url(bind_host="0.0.0.0", port=9000)
+        finally:
+            del os.environ["PODCAST_BASE_URL"]
+        self.assertEqual(url, "http://203.0.113.5:8000")
+
+    def test_build_public_base_url_public_host_overrides_env_var(self) -> None:
+        os.environ["PODCAST_BASE_URL"] = "http://203.0.113.5:8000"
+        try:
+            url = self.service.build_public_base_url(bind_host="0.0.0.0", port=9000, public_host="5.6.7.8")
+        finally:
+            del os.environ["PODCAST_BASE_URL"]
+        self.assertEqual(url, "http://5.6.7.8:9000")
+
+    def test_build_public_base_url_falls_back_to_hostname(self) -> None:
+        os.environ.pop("PODCAST_BASE_URL", None)
+        url = self.service.build_public_base_url(bind_host="127.0.0.1", port=8000)
+        self.assertEqual(url, "http://127.0.0.1:8000")
+
     def test_create_server_serves_feed_and_episode(self) -> None:
         audio_path = self.paths.audio / "episode.wav"
         audio_path.write_bytes(b"episode-bytes")
