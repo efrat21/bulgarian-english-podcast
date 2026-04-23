@@ -173,6 +173,26 @@
       "priority": "high",
       "dependencies": ["pipeline-integration", "article-audio-dedup", "local-rss-delivery"],
       "notes": "Completed 2026-04-19 for issue #15. Added daily-check and daily-daemon CLI flows, durable scheduler state in data/scheduler_state.json, resilience against fetch/pipeline failures, README scheduling guidance, and scheduler regression coverage. Published to nested app repo origin/master in commit 4b6c545; issue #15 closed automatically on push."
+    },
+    {
+      "id": "restore-local-rss-delivery",
+      "title": "Restore documented local RSS delivery CLI command",
+      "description": "Issue #16: Fix the missing `local-rss-delivery` command wiring so the documented RSS rebuild/serve flow works from the CLI again.",
+      "owner": "Bishop",
+      "status": "done",
+      "priority": "high",
+      "dependencies": ["local-rss-delivery"],
+      "notes": "Completed 2026-04-21 for issue #16. Restored the local-rss-delivery CLI command, reintroduced RSS service/path wiring, added CLI + RSS regression coverage, and published to nested app repo origin/master in commit fc948e6; issue #16 closed automatically on push."
+    },
+    {
+      "id": "rss-hostname-fix",
+      "title": "Fix RSS feed hostname for external podcast clients",
+      "description": "Issue #17: LocalRSSService._default_public_host() used socket.gethostname() which returned a LAN hostname not reachable externally. Fix: build_public_base_url() now checks PODCAST_BASE_URL env var before falling back to socket.gethostname(). Tests and README updated.",
+      "owner": "Bishop",
+      "status": "done",
+      "priority": "high",
+      "dependencies": ["local-rss-delivery"],
+      "notes": "Completed 2026-04-23 for issue #17. PR #18 squash-merged. Added PODCAST_BASE_URL env var support, 5 unit tests covering all priority paths, and README documentation. Issue #17 closed automatically."
     }
   ]
 }
