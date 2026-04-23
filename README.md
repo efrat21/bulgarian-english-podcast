@@ -194,7 +194,7 @@ python main.py local-rss-delivery
 ```
 
 - The command rebuilds `data\rss\podcast.xml`, stages episode files under `data\rss\episodes\`, starts the local feed server, and prints the feed URL to use on your phone.
-- If the printed host name is not reachable from Android, get your computer's Wi-Fi IPv4 address with `ipconfig` and rerun with `--public-host <LAN-IP>`. Use the Wi-Fi adapter address, not `127.0.0.1`.
+- If the printed host name is not reachable from Android, set the `PODCAST_BASE_URL` environment variable to your computer's Wi-Fi IPv4 address (e.g. `PODCAST_BASE_URL=http://192.168.1.10:8000` in `.env`) before running the command, or pass `--public-host <LAN-IP>` on the CLI. Use the Wi-Fi adapter address, not `127.0.0.1`.
 - Keep the command running while Podcast Addict connects.
 
 In Podcast Addict on Android:

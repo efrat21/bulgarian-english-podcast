@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import socket
 import xml.etree.ElementTree as ET
@@ -40,7 +41,15 @@ class LocalRSSService:
         port: int,
         public_host: str | None = None,
     ) -> str:
-        host = public_host or self._default_public_host(bind_host)
+        # Explicit --public-host flag takes highest priority.
+        if public_host:
+            return f"http://{public_host}:{port}"
+        # PODCAST_BASE_URL env var lets operators set the full public URL
+        # (e.g. "http://203.0.113.5:8000") without touching CLI flags.
+        env_base_url = os.environ.get("PODCAST_BASE_URL", "").strip()
+        if env_base_url:
+            return env_base_url.rstrip("/")
+        host = self._default_public_host(bind_host)
         return f"http://{host}:{port}"
 
     def rebuild_feed(self, public_base_url: str) -> FeedBuildResult:
