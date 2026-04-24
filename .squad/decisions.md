@@ -762,6 +762,53 @@ None required. The nested repo is now published with its approved state.
 3. Issue #11 is a polish follow-up that can wait or proceed in parallel.
 4. No decomposition needed; both are single-agent stories.
 
+### 27. Bishop Decision: Daily Episode Automation Implementation (2026-04-19)
+**Owner:** Bishop (Backend Dev)
+
+Implemented hybrid scheduling approach for Issue #15 (daily episode automation):
+
+**Two Modes:**
+1. **`daily-check` Command (Recommended):** Run once via external scheduler (Windows Task Scheduler, cron); idempotent; safe to run multiple times per day; more reliable for machines that sleep or restart.
+2. **`daily-daemon` Command (Alternative):** Long-running background process; checks once per day, wakes hourly (configurable); use when external scheduling unavailable; stop with Ctrl+C.
+
+**Implementation Details:**
+- New module: `src/knigovishte_podcast/services/scheduler.py`
+- `DailyEpisodeScheduler`: orchestrates daily checks
+- `SchedulerState`: persists state in `data/scheduler_state.json`
+- Deduplication: tracks last processed article URL in state; relies on existing `ArticleAudioManifest` for content-based dedup; skips if URL matches OR content hash matches
+
+**Key Tradeoffs:**
+1. No built-in daemon management; chose external scheduler over Windows Service complexity (more transparent, easier to debug)
+2. Daily frequency only; no hourly/custom intervals (matches Knigovishte publishing cadence)
+3. URL-based tracking first; checks URL before content hash for speed (may miss rare URL-reuse cases, but manifest catches content dupes)
+4. No RSS auto-rebuild; scheduler only generates audio (RSS rebuild is separate concern, not yet implemented)
+
+**Testing:** 12 new scheduler unit tests (state, dedup, check logic); 2 new CLI integration tests; total 103 tests all passing; ruff, mypy clean.
+
+**Modified:** `src/knigovishte_podcast/cli.py`, `README.md`, `tests/test_cli.py`  
+**Added:** `src/knigovishte_podcast/services/scheduler.py`, `tests/test_scheduler.py`
+
+### 28. Ripley Decision: Issue #16 Triage — Missing RSS CLI Command (2026-04-21T06:20:20Z)
+**Owner:** Ripley (Lead)
+**Status:** Pending Implementation
+**Reassigned to:** Bishop (Backend Dev)
+
+**Problem:** User reported issue #16: `python main.py local-rss-delivery` fails with argparse "invalid choice" error. The `local-rss-delivery` CLI command was marked complete in task board and documented in README, but the actual CLI subcommand parser was never wired up. Only documentation commits were made.
+
+**Root Cause:** Classic separation-of-concerns issue: backend RSS service modules may exist, but CLI parser definition is incomplete (no subcommand added); README documents a command that doesn't exist.
+
+**Decision:** Reassign to Bishop to complete CLI integration:
+1. Add `local-rss-delivery` subcommand to `cli.py` build_parser() with appropriate arguments (e.g., `--rss-port` for LAN serving)
+2. Wire the command to dispatch to an RSS handler that reads generated audio from data/audio/, generates podcast.xml using existing RSS generation logic, optionally serves RSS feed + audio files over HTTP on local network
+3. Test end-to-end with sample article generation
+4. Update task board entry and issue #15 once command is live
+
+**Priority:** HIGH (blocks user workflow and issue #15 verification)  
+**Blocker:** None  
+**Depends on:** Existing RSS service modules from issue #15 implementation
+
+**Impact:** Closes issue #16; unblocks full verification of issue #15; restores user-documented workflow.
+
 ---
 
 ### 27. Parker Decision & Implementation: Issue #12 — Windows COM Initialization Fix (2026-04-19T13:15:00Z)

@@ -153,6 +153,8 @@
 - Decisions merged into active decisions.md by Scribe
 - Cross-agent context propagated to Bishop, Ash, Parker histories
 
+📌 Team update (2026-04-24T08:06:16Z): Issue #16 Triage and Routing (Decision #28) — `local-rss-delivery` CLI command documented but not wired in `cli.py` parser. Root cause: separation-of-concerns gap (backend RSS service exists, CLI integration missing). Reassigned to Bishop for completion. Task: add subcommand with `--rss-port` argument, dispatch to RSS handler (read from data/audio/, generate podcast.xml, serve over LAN HTTP), end-to-end test, update task board. Priority HIGH, blocks user workflow and issue #15 verification. Decision recorded in decisions.md #28. Decided by Ripley
+
 ## Recent Session (2026-04-17T163000Z)
 
 📌 **Plugin Marketplace Source Added**

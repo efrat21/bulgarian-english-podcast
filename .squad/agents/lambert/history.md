@@ -13,6 +13,8 @@
 - Local Wi-Fi RSS delivery is wired through `my-project\src\knigovishte_podcast\services\rss.py` and exposed from the `local-rss-delivery` CLI entrypoint in `my-project\src\knigovishte_podcast\cli.py`.
 - The delivery path publishes `data\rss\podcast.xml` plus copied episode enclosures under `data\rss\episodes\`; supported podcast-friendly enclosure formats are `.wav`, `.mp3`, `.m4a`, and `.aac`.
 - Regression coverage for RSS feed generation, LAN file serving, CLI no-serve/serve paths, and IP-detection fallbacks now lives in `my-project\tests\test_rss.py` and `my-project\tests\test_cli.py`.
+- RSS-specific verification still passes via `python -m unittest discover -s tests -p 'test_rss.py' -v` plus `python -m unittest discover -s tests -p 'test_cli.py' -k local_rss_delivery -v`; a live smoke run of `python main.py local-rss-delivery --host 127.0.0.1 --port 0 --public-host 127.0.0.1` served `data\rss\podcast.xml` and staged episodes from `my-project\data\audio\`.
+- The broader `test_cli.py` suite currently has one unrelated failure in `test_web_command_starts_local_ui`, where patching `knigovishte_podcast.web.create_app` raises `AttributeError` before the RSS assertions run; RSS-local delivery tests themselves still pass.
 
 ## Recent Session (20260417T183932Z)
 

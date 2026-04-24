@@ -32,6 +32,10 @@
 
 📌 Team update (2026-04-19T091835Z): Issue #8 completed. Durable artifact deduplication implemented via SHA-256 content hash + manifest at `my-project\data\audio\manifest.json`. Pipeline now idempotent; commit 93d31f9. Decided by Bishop
 
+📌 Team update (2026-04-24T08:06:16Z): Daily Episode Automation (Issue #15) Decision #27 merged: Implemented hybrid scheduling with `daily-check` command (via external scheduler) and `daily-daemon` command (long-running background). Scheduler module at `services/scheduler.py`, state persisted in `data/scheduler_state.json`, deduplication via URL + content hash. 12 new unit tests, 2 CLI tests, 103 total passing, ruff/mypy clean. New module: `services/scheduler.py`; modified: `cli.py`, `README.md`, `tests/test_cli.py`. Ready for next phase. Decided by Bishop
+
+📌 Team update (2026-04-24T08:06:16Z): Issue #16 Root Cause and Routing (Decision #28): `local-rss-delivery` CLI command was documented but not registered in `cli.py`, causing argparse "invalid choice" error. Ripley triaged and reassigned to Bishop for CLI integration completion. Task: wire `local-rss-delivery` subcommand, dispatch to RSS handler, end-to-end test with article generation, update task board. Priority HIGH, no blockers, depends on existing RSS modules from issue #15. Expected outcome: closes issue #16, unblocks issue #15 verification. Decided by Ripley
+
 📌 Team update (2026-04-19T133000Z): Sentence prefix removal completed (commit a48e3f0) — removes "English:" and "Bulgarian:" from script body lines while preserving title markers and backward compatibility. Implementation tested (78 tests green), code reviewed and approved by Lambert. Publication BLOCKED by history divergence (local a48e3f0 vs remote 3d1ebce, no common ancestor). Requires Coordinator strategy for alignment. Documented by Scribe
 
 📌 Team update (2026-04-19T133500Z): Force-push authorized and executed — nested repo remote history rewritten from 3d1ebce → a48e3f0. Commit a48e3f0 (Remove sentence prefixes from podcast scripts) now published to origin/master. Local and remote aligned. Decision #25 recorded. Decided by efratmiyara-work
@@ -45,3 +49,6 @@
 📌 Team update (2026-04-19T12:50:03Z): Issue #14 regression test alignment completed. Analyzed bilingual TTS flow: title segment + body segments make multiple Google calls. Updated test expectations from 1 to 2 English Google calls. Both bilingual and single-voice paths now tested correctly. Ready for Lambert's final approval. Alignment by Bishop
 
 
+- Issue #16 root cause: `local-rss-delivery` was documented but not registered in `src\knigovishte_podcast\cli.py`, so argparse rejected it before any RSS flow could run.
+- `ProjectPaths` now derives stable `data\rss\` and `data\rss\episodes\` locations automatically, which keeps RSS staging available to both CLI wiring and tests without changing existing callers.
+- Regression coverage for local RSS should cover both seams: feed staging (`podcast.xml` plus copied enclosures) and actual HTTP serving, because the command must publish files and stay reachable on the LAN.
