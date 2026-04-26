@@ -21,10 +21,12 @@ Use this when the product already creates local episode files, but the missing p
 - Prefer a **thin stdlib HTTP server** for the first slice when the goal is local-network reachability, not hosted publishing.
 - Keep the published base URL **explicit/overrideable** so enclosure links match what phones on the LAN can reach.
 - If current audio is already acceptable, **reuse it directly** rather than inventing a transcoding dependency in v1.
+- Prefer **persisted English title metadata** from adjacent script or translation artifacts when building RSS `<item><title>` values; only fall back to filename normalization when no metadata exists.
+- Keep a **slug-cleanup fallback** so routing prefixes like `vijte-7549-` do not leak into RSS titles when metadata is unavailable.
 
 ## Examples
 
-- `my-project\src\knigovishte_podcast\services\rss.py` rebuilds `data\rss\episodes\`, writes `podcast.xml`, and exposes a stdlib server factory.
+- `my-project\src\knigovishte_podcast\services\rss.py` rebuilds `data\rss\episodes\`, writes `podcast.xml`, exposes a stdlib server factory, and reads `English title:` lines from matching script artifacts.
 - `my-project\src\knigovishte_podcast\cli.py` adds `local-rss-delivery` with `--public-host` and `--no-serve`.
 - `my-project\tests\test_rss.py` verifies feed generation, staged file cleanup, and actual HTTP serving.
 
@@ -32,4 +34,5 @@ Use this when the product already creates local episode files, but the missing p
 
 - Serving `data\audio\` directly without a stable feed root or cleanup step.
 - Hiding feed URLs behind opaque autodiscovery with no user-visible override.
+- Treating the audio filename as the canonical listener-facing title when richer translation metadata is already on disk.
 - Introducing a heavyweight media conversion stack before proving the private-LAN subscription path works.

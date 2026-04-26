@@ -15,6 +15,9 @@
 - Regression coverage for RSS feed generation, LAN file serving, CLI no-serve/serve paths, and IP-detection fallbacks now lives in `my-project\tests\test_rss.py` and `my-project\tests\test_cli.py`.
 - RSS-specific verification still passes via `python -m unittest discover -s tests -p 'test_rss.py' -v` plus `python -m unittest discover -s tests -p 'test_cli.py' -k local_rss_delivery -v`; a live smoke run of `python main.py local-rss-delivery --host 127.0.0.1 --port 0 --public-host 127.0.0.1` served `data\rss\podcast.xml` and staged episodes from `my-project\data\audio\`.
 - The broader `test_cli.py` suite currently has one unrelated failure in `test_web_command_starts_local_ui`, where patching `knigovishte_podcast.web.create_app` raises `AttributeError` before the RSS assertions run; RSS-local delivery tests themselves still pass.
+- RSS item titles are currently derived from staged audio filename stems in `my-project\src\knigovishte_podcast\services\rss.py`; a probe with `vijte-7549.wav` produced the feed title `vijte 7549`, which matches issue #21's bug report.
+- English title metadata already exists in translation artifacts rendered by `my-project\src\knigovishte_podcast\cli.py` (`scripts\<slug>.translation.txt` includes `English title: ...`), but `my-project\tests\test_rss.py` does not yet assert `<item><title>` content, so RSS title regressions can slip through even when enclosure URL tests pass.
+- Issue #21 review outcome: `my-project\src\knigovishte_podcast\services\rss.py` now resolves RSS item titles from matching `data\scripts\<slug>.translation.txt` or `<slug>.txt` metadata before stripping `vijte-####` from filename stems; `my-project\tests\test_rss.py` now covers metadata-first title selection plus slug-cleanup fallback. Legacy audio that lacks matching metadata and has no title-bearing slug still falls back to `vijte ####`, so the fix depends on persisted script/translation artifacts being present.
 
 ## Recent Session (20260417T183932Z)
 
@@ -59,4 +62,7 @@
 
 📌 Team update (2026-04-19T12:50:03Z): Issue #14 Google English voice review cycle completed. First pass rejected for inconsistent non-en-US override routing; second pass rejected for regression test mismatch (bilingual flow makes two Google calls, not one); final pass approved after Bishop aligned test expectations. Issue approved for publication and closure. Decision #31-32 recorded. Approved by Lambert
 
+
+📌 Team update (2026-04-26T11:49:08Z): Issue #21 RSS title patch reviewed on working-tree changes to `my-project\src\knigovishte_podcast\services\rss.py` and `my-project\tests\test_rss.py`. Result: not approved yet — stripping `vijte NNNN` from sluggy filenames works for `vijte-7549-the-little-prince.wav`, but a probe with `vijte-7549.wav` still emits `vijte 7549`, and the implementation still does not read actual English title metadata from `scripts\<slug>.translation.txt`. Tests pass, but coverage remains partial because the new assertion only checks slug-derived lowercase title text.
 
+📌 Team update (2026-04-26T08:56:42Z): Issue #21 RSS title metadata fix approved. Ash revised RSS service to prefer persisted English title from translation artifacts; fallback to slug cleanup for legacy audio without metadata. Regression tests now cover `vijte-7549.wav` metadata case and metadata-precedence. All 78 tests pass, no regressions. APPROVED FOR PUBLICATION. Decided by Lambert

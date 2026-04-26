@@ -797,6 +797,65 @@ Implemented hybrid scheduling approach for Issue #15 (daily episode automation):
 
 **Root Cause:** Classic separation-of-concerns issue: backend RSS service modules may exist, but CLI parser definition is incomplete (no subcommand added); README documents a command that doesn't exist.
 
+### 29. Ash Decision: RSS Titles Prefer English Metadata (2026-04-26T08:56:42Z)
+**Owner:** Ash (Language/AI Dev)
+**Status:** Implemented & Approved
+
+**Issue:** #21 — episodes name in English
+
+**Decision:** For local RSS delivery, RSS item titles are now generated from persisted English title metadata rather than audio filenames.
+
+**Implementation:**
+- Read the matching `English title:` line from `data/scripts/{episode_slug}.translation.txt` first
+- If translation file not found, read from `data/scripts/{episode_slug}.txt`
+- Only fall back to slug cleanup (stripping `vijte-NNNN` pattern) for degraded case: older artifacts that lack sidecar metadata
+
+**Rationale:** Subscriber-facing RSS titles should reflect actual article titles, not podcast production filenames. Title metadata is already captured during translation phase in `ArticleTranslator`, making it the authoritative source.
+
+**Testing:** New regression tests added to `my-project/tests/test_rss.py`:
+- Coverage for `vijte-7549.wav` slug-only case with metadata present → asserts metadata title wins
+- Coverage for metadata-first precedence over leftover filename text
+- Explicit test for fallback when metadata missing
+
+**Test Result:** All 78 RSS tests pass; no regressions.
+
+**Residual Constraint (Non-Blocking):** Legacy audio with only `vijte-####` filename and no matching script/translation artifact still falls back to `vijte ####` RSS title. Full title recovery requires metadata artifacts to exist. This is acceptable for initial release; legacy audio cleanup can be deferred.
+
+**Modified:** `my-project/src/knigovishte_podcast/services/rss.py`  
+**Modified:** `my-project/tests/test_rss.py`
+
+### 30. Lambert Decision: RSS Title Regression Coverage (2026-04-26T08:56:42Z)
+**Owner:** Lambert (Tester)
+**Status:** Approved
+
+**Concern:** Issue #21 fix must assert RSS item titles against actual metadata, not just copied filenames. Previous test coverage only checked enclosure URLs, leaving title regressions undetected.
+
+**Requirement:** Regression test suite must explicitly cover:
+1. RSS item `<title>` content matches intended English title metadata
+2. Metadata-first selection takes precedence over filename cleanup
+3. Fallback behavior is explicit and tested, so the feed never silently reverts to slug text
+
+**Outcome:** Ash's revision satisfies this requirement. New regression tests in `my-project/tests/test_rss.py` provide full coverage; all tests pass.
+
+**Recommendation:** Approved for publication.
+
+### 31. Lambert Decision — Issue #21 RSS Title Review Approval (2026-04-26T08:56:42Z)
+**Owner:** Lambert (Tester)
+**Status:** Final Approval
+
+**Decision:** Approve Ash's revision for publication.
+
+**Evidence:**
+- `my-project/src/knigovishte_podcast/services/rss.py` now prefers persisted English title metadata from matching `scripts\<slug>.translation.txt` and `scripts\<slug>.txt` before falling back to filename cleanup
+- `my-project/tests/test_rss.py` now covers the two regressions previously blocking approval: the `vijte-7549.wav` slug-only case (with translation metadata present) and metadata taking precedence over leftover filename text
+- Test execution: `python -m unittest discover -s tests -p "test_rss.py" -v` passes all tests
+
+**Residual Constraint:**
+- If an older audio file has no matching script/translation artifact and its filename is only `vijte-####`, RSS still cannot recover a real English title and falls back to `vijte ####`
+- This is acceptable as non-blocking; full title recovery depends on metadata artifacts
+
+**Recommendation:** Merge and publish immediately; ready for production.
+
 **Decision:** Reassign to Bishop to complete CLI integration:
 1. Add `local-rss-delivery` subcommand to `cli.py` build_parser() with appropriate arguments (e.g., `--rss-port` for LAN serving)
 2. Wire the command to dispatch to an RSS handler that reads generated audio from data/audio/, generates podcast.xml using existing RSS generation logic, optionally serves RSS feed + audio files over HTTP on local network

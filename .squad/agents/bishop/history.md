@@ -15,6 +15,7 @@
 - The CLI now covers fetch, translate, build-script, generate-audio, and run; translation previews are persisted as `my-project\data\scripts\{slug}.translation.txt` while `--refresh` forces a fresh article download over cached HTML.
 - Local feed delivery now stages publishable artifacts under `my-project\data\rss\` (`podcast.xml` plus `episodes\`) instead of serving the whole data tree.
 - `my-project\src\knigovishte_podcast\services\rss.py` is the new backend seam for rebuilding the LAN RSS feed and serving it with stdlib HTTP primitives.
+- RSS subscriber-facing episode titles should normalize stored slug filenames by stripping the leading `vijte-{id}-` segment before publishing `<item><title>` text; regression coverage lives in `my-project\tests\test_rss.py`.
 - The `local-rss-delivery` CLI command prints a subscribable LAN URL, rebuilds delivery files from existing `data\audio\` artifacts, and keeps the first slice dependency-free by serving the current `.wav` output directly.
 - `my-project\tests\test_tts.py` bilingual Google-override regressions must assert per-segment synthesis calls, because `_split_script_by_language()` keeps English title and body as separate English segments around Bulgarian content.
 - English Google voice routing should treat any valid `en-*` Google voice name as a Google path, not only `en-US-*`; derive the `language_code` from the selected voice name and fall back through `GoogleTTSConfig` only when needed.
