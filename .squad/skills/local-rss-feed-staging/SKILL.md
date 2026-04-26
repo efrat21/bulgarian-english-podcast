@@ -20,6 +20,7 @@ Use this when the product already creates local episode files, but the missing p
 - Build `podcast.xml` from the **already-materialized audio files** so feed generation is restartable and does not depend on rerunning expensive steps.
 - Prefer a **thin stdlib HTTP server** for the first slice when the goal is local-network reachability, not hosted publishing.
 - Keep the published base URL **explicit/overrideable** so enclosure links match what phones on the LAN can reach.
+- When documented operator config lives in `my-project\.env`, **load that dotenv file inside the RSS path** before resolving `PODCAST_BASE_URL`; do not assume the command was launched from a shell that already exported the variable.
 - If current audio is already acceptable, **reuse it directly** rather than inventing a transcoding dependency in v1.
 - Prefer **persisted English title metadata** from adjacent script or translation artifacts when building RSS `<item><title>` values; only fall back to filename normalization when no metadata exists.
 - Keep a **slug-cleanup fallback** so routing prefixes like `vijte-7549-` do not leak into RSS titles when metadata is unavailable.

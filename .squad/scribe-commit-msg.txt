@@ -1,0 +1,8 @@
+Scribe: Log issue #21 RSS title revision completion
+
+- Orchestration logs for Ash and Lambert (2026-04-26T08-56-42Z)
+- Session log for issue #21 review round
+- Merged 3 decisions from inbox into decisions.md (decisions #29-31)
+- Deleted merged inbox files
+- Updated Ash and Lambert history.md with team update
+- All squad/ changes staged and ready

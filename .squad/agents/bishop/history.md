@@ -22,6 +22,8 @@
 - Key publication paths for issue #14 were `my-project\src\knigovishte_podcast\config.py`, `my-project\src\knigovishte_podcast\services\tts.py`, `my-project\src\knigovishte_podcast\cli.py`, `my-project\tests\test_tts.py`, and `my-project\tests\test_cli.py`; final published commit on nested app repo master was `4d1f36b`.
 - README phone-side delivery docs should tell users to run `local-rss-delivery`, use the printed LAN URL (or `--public-host <LAN-IP>`), and keep both phone and computer on the same trusted Wi-Fi while the server is running.
 - Local RSS README guidance should also note that Podcast Addict setup currently serves staged `.wav` enclosures, while `.mp3`, `.m4a`, and `.aac` are supported when those files exist under `data\rss\episodes\`.
+- `my-project\src\knigovishte_podcast\services\rss.py` must load `my-project\.env` before resolving `PODCAST_BASE_URL`; otherwise `local-rss-delivery` ignores the documented base URL override unless the operator exports it in the live shell.
+- Issue #23 validation path: rebuild with `python main.py local-rss-delivery --no-serve`, then inspect `my-project\data\rss\podcast.xml` for the expected LAN host and current metadata-derived episode titles.
 
 ## Team Updates
 
@@ -53,3 +55,5 @@
 - Issue #16 root cause: `local-rss-delivery` was documented but not registered in `src\knigovishte_podcast\cli.py`, so argparse rejected it before any RSS flow could run.
 - `ProjectPaths` now derives stable `data\rss\` and `data\rss\episodes\` locations automatically, which keeps RSS staging available to both CLI wiring and tests without changing existing callers.
 - Regression coverage for local RSS should cover both seams: feed staging (`podcast.xml` plus copied enclosures) and actual HTTP serving, because the command must publish files and stay reachable on the LAN.
+
+📌 Team update (2026-04-26T09:10:13Z): Issue #23 resolved — RSS service now loads `my-project\.env` before resolving `PODCAST_BASE_URL`. Modified `services/rss.py`, added regression test coverage, rebuilt `data\rss\podcast.xml` with corrected base URL and metadata-derived titles. CLI `--public-host` override still works. LAN delivery operational as documented. Decided by Bishop

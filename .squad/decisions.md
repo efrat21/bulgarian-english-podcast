@@ -837,6 +837,28 @@ Implemented hybrid scheduling approach for Issue #15 (daily episode automation):
 
 **Outcome:** Ash's revision satisfies this requirement. New regression tests in `my-project/tests/test_rss.py` provide full coverage; all tests pass.
 
+### 31. Bishop Decision: RSS Base URL Must Honor Project .env (2026-04-26T09:10:13Z)
+**Owner:** Bishop (Backend Dev)
+**Status:** Implemented, Issue #23 closed
+
+**Context:** Issue #23 reported that `data\rss\podcast.xml` kept emitting `http://efrat-tensor:8000/...` even though the project `.env` already defined `PODCAST_BASE_URL`.
+
+**Root Cause:** `LocalRSSService.build_public_base_url()` did not load `my-project\.env` before resolving `PODCAST_BASE_URL`, causing the service to fall back to hardcoded defaults instead of respecting user configuration.
+
+**Decision:** `LocalRSSService.build_public_base_url()` now loads `my-project\.env` before resolving `PODCAST_BASE_URL`, while still letting `--public-host` CLI argument win when explicitly passed.
+
+**Why:** README guidance already tells operators to set `PODCAST_BASE_URL` in `.env`; loading that file inside the RSS path keeps CLI behavior aligned with docs and makes RSS rebuilds repeatable without shell-specific hidden state.
+
+**Implementation:**
+- Modified `my-project/src/knigovishte_podcast/services/rss.py` to load env file before URL resolution
+- Added regression test coverage to `my-project/tests/test_rss.py`
+- Rebuilt `my-project/data/rss/podcast.xml` with corrected config and metadata-derived titles
+- Verified HTTP output at configured LAN host matches expected format
+
+**Operational Note:** After changing `PODCAST_BASE_URL` or `--public-host`, rerun `python main.py local-rss-delivery --no-serve` (or restart the server) so `data\rss\podcast.xml` is regenerated with the new address.
+
+**Result:** Issue #23 resolved. RSS service now honors `.env` configuration; LAN delivery works as documented.
+
 **Recommendation:** Approved for publication.
 
 ### 31. Lambert Decision — Issue #21 RSS Title Review Approval (2026-04-26T08:56:42Z)

@@ -27,6 +27,7 @@
 - Regression coverage for bilingual flows: title + body segments make multiple Google calls
 - Copilot instructions should be minimal and actionable (not speculative)
 - Squad decisions recorded in inbox/ for post-session merge and cross-agent propagation
+- Artifact regeneration vs. code bugs: when generated output (e.g., podcast.xml) is stale or incorrect but the generation code itself is sound, route to the orchestrator (Bishop) to rebuild with correct inputs/configuration—not a code refactor issue
 
 ## Legacy Sessions Summarized (2026-04-13 – 2026-04-17)
 
@@ -38,6 +39,9 @@
 
 📌 **2026-04-26T090000Z: Issue #21 Reconciliation & Closeout**
 - **#21 CLOSED:** Episode titles fix complete. Ash's revision (prefer persisted English title over filename cleanup) approved by Lambert. RSS regressions verified. Routing labels removed; issue marked completed.
+
+📌 **2026-04-26T090300Z: Issue #23 Triage**
+- **#23 TRIAGED:** podcast.xml contains stale artifacts (wrong base URL `efrat-tensor:8000`, old April 2026 timestamps). Root cause: artifact generation is correct, but inputs were wrong when last built. Routed to squad:bishop for artifact regeneration with correct base URL configuration.
 
 📌 **2026-04-26T085000Z: Squad Inbox Cleanup**
 - **#19:** CLOSED (state:completed) — PR #20 merged, UDP socket routing now resolves LAN IP correctly
