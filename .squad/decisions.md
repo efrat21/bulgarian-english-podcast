@@ -849,7 +849,70 @@ Implemented hybrid scheduling approach for Issue #15 (daily episode automation):
 
 **Why:** README guidance already tells operators to set `PODCAST_BASE_URL` in `.env`; loading that file inside the RSS path keeps CLI behavior aligned with docs and makes RSS rebuilds repeatable without shell-specific hidden state.
 
-**Implementation:**
+**Implementation:** Modified `my-project\src\knigovishte_podcast\services\rss.py` to call `load_dotenv(dotenv_path)` before accessing environment variables.
+
+### 32. Ash Decision: Langbly host failover (2026-04-26)
+**Owner:** Ash (Language/AI Dev)
+**Status:** Approved
+**Issue:** #24
+
+**Context:** When `LANGBLY_BASE_URL` points at a non-default Langbly host, the translator should automatically keep `https://api.langbly.com` as a failover target instead of treating the custom host as a single point of failure.
+
+**Decision:** Configure `TranslationConfig` to expose timeout/retry/failover settings for Langbly endpoints. The translator client attempts the configured host first, then retries against the default Langbly API before surfacing a hard failure.
+
+**Why:** Issue #24 showed the web flow blocking on a 60-second timeout from a regional Langbly endpoint. The smallest behavior-safe fix is to keep the existing provider contract but let the translation client try the default Langbly host before surfacing a hard failure.
+
+**Impact:**
+- `my-project\src\knigovishte_podcast\config.py` exposes timeout/retry/failover configuration for Langbly
+- `my-project\src\knigovishte_podcast\services\translator.py` retries retryable failures and fails over across configured hosts
+- `my-project\tests\test_translator.py` and `my-project\tests\test_config.py` lock the new behavior down
+
+### 33. Bishop Decision: Surface Langbly timeouts deliberately at the web boundary (2026-04-26)
+**Owner:** Bishop (Backend Dev)
+**Status:** Approved
+**Issue:** #24
+
+**Context:** `eu.langbly.com` timeouts were bubbling up as raw request failures during browser-driven episode generation. Lambert's acceptance gate required visible proof that the user path either succeeds through failover or fails with an intentional timeout message.
+
+**Decision:** Keep the provider retry/failover logic inside `services\translator.py`, but raise a dedicated `LangblyTimeoutError` exception once every configured Langbly endpoint times out. Let `web.py` translate that exception into explicit copy telling the operator the episode was not generated and they should retry later.
+
+**Why:** This keeps orchestration honest: the translator owns provider-specific timeout semantics, while the web layer owns the human-facing consequence. It also gives tests a stable seam for both backend failover assertions and browser-visible regression coverage.
+
+### 34. Lambert Decision: Approve Langbly timeout path for issue #24 (2026-04-26)
+**Owner:** Lambert (Tester)
+**Status:** Approved
+**Issue:** #24
+
+**Context:** Bishop's independent revision keeps Langbly endpoint failover in `my-project\src\knigovishte_podcast\services\translator.py` and adds a dedicated timeout exception for the all-endpoints-down case. The web layer in `my-project\src\knigovishte_podcast\web.py` turns that failure into an intentional retry-later message.
+
+**Decision:** Approve the revision for publication and close issue #24 once merged.
+
+**Why:** The translator tests now prove both the `eu.langbly.com` → `api.langbly.com` failover parity and the deliberate `LangblyTimeoutError` path when every endpoint times out. Web regression proves the browser sees a controlled failure message. Both focused timeout suite and full unittest suite pass locally.
+
+### 35. Parker Decision: Export final episodes as MP3 by default (2026-04-26)
+**Owner:** Parker (Audio Dev)
+**Status:** Approved
+**Issue:** #22
+
+**Context:** Issue #22 clarified the user goal: prefer MP3 for streaming compatibility. The app generates WAV artifacts for synthesis and bilingual concatenation, but RSS delivery accepts multiple enclosure types.
+
+**Decision:**
+- Keep WAV as the internal render format for synthesis and bilingual concatenation
+- Export the final listener-facing episode artifact as `.mp3` under `my-project\data\audio\`
+- Use `imageio-ffmpeg` for explicit WAV-to-MP3 conversion so both local pyttsx3 and Google LINEAR16 audio share one export path
+- When RSS staging sees multiple files for the same episode stem, prefer `.mp3` over `.m4a`, `.aac`, and `.wav`
+
+**Why:**
+- pyttsx3 and bilingual concatenation flow are already reliable with WAV
+- MP3 is a better default for streaming and podcast client compatibility
+- Keeping WAV internal avoids rewriting segment-generation logic while delivering MP3 to listeners
+
+**Impacted paths:**
+- `my-project\src\knigovishte_podcast\services\tts.py`
+- `my-project\src\knigovishte_podcast\services\rss.py`
+- `my-project\README.md`
+- `my-project\tests\test_tts.py`
+- `my-project\tests\test_rss.py`
 - Modified `my-project/src/knigovishte_podcast/services/rss.py` to load env file before URL resolution
 - Added regression test coverage to `my-project/tests/test_rss.py`
 - Rebuilt `my-project/data/rss/podcast.xml` with corrected config and metadata-derived titles
