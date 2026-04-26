@@ -47,6 +47,12 @@
 - **#19:** CLOSED (state:completed) — PR #20 merged, UDP socket routing now resolves LAN IP correctly
 - **#22:** MARKED BLOCKED (label:question) — awaiting user clarification on audio format choice and rationale
 
+📌 **2026-04-26T091000Z: Issue #22 Triage & Routing**
+- **#22 ROUTED TO PARKER:** User clarification received: "consider using mp3, for streaming compatibility"
+- Action: Removed `question` label (blocker resolved), added `squad:parker` label
+- Scope captured: Audio generation pipeline should output MP3 for broad streaming platform support
+- Status: Ready for Parker (Audio Dev) to implement
+
 📌 **2026-04-26T084500Z: Issue Triage #19, #21, #22**
 - #19: RESOLVED (PR #20, UDP hostname LAN detection)
 - #21: ROUTED TO BISHOP — strip "vijte NNNN" prefix from RSS titles (squad:bishop)
@@ -67,6 +73,12 @@
 📌 **2026-04-19T12:50:03Z: Issue #14 Revision**
 - Revised English voice routing to treat all `en-*` Google names consistently
 - Language code derived from voice name; architectural alignment complete
+
+📌 **2026-04-26T092000Z: Issue #24 Triage**
+- **#24 TRIAGED:** Langbly API timeout (60s read timeout on `eu.langbly.com:443`) during web UI episode generation.
+- Root cause: Provider reliability issue, not code bug
+- Routed to squad:ash (Language/AI Dev) for diagnosis: verify API key, investigate endpoint health, consider retry strategy or fallback provider
+- Status: Ready for Ash to investigate Langbly configuration and resilience options
 
 📌 **Earlier Sessions (2026-04-17 and earlier):**
 - Issue #6 (Bulgarian voice): Fixed via PR #7; bilingual voice routing via language segmentation

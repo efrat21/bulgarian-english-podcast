@@ -24,6 +24,9 @@
 - Local RSS README guidance should also note that Podcast Addict setup currently serves staged `.wav` enclosures, while `.mp3`, `.m4a`, and `.aac` are supported when those files exist under `data\rss\episodes\`.
 - `my-project\src\knigovishte_podcast\services\rss.py` must load `my-project\.env` before resolving `PODCAST_BASE_URL`; otherwise `local-rss-delivery` ignores the documented base URL override unless the operator exports it in the live shell.
 - Issue #23 validation path: rebuild with `python main.py local-rss-delivery --no-serve`, then inspect `my-project\data\rss\podcast.xml` for the expected LAN host and current metadata-derived episode titles.
+- `my-project\src\knigovishte_podcast\services\translator.py` should raise a dedicated `LangblyTimeoutError` once all configured Langbly endpoints time out, so upstream callers can keep the timeout copy deliberate instead of echoing raw requests exceptions.
+- `my-project\src\knigovishte_podcast\web.py` now owns the user-facing translation-timeout message via `_format_error()`, appending that no episode was generated and the operator should retry later.
+- Issue #24 regression proof lives in `my-project\tests\test_translator.py` and `my-project\tests\test_web.py`; translator coverage must prove fallback preserves payload/header/timeout parity, and web coverage must assert the visible timeout message.
 
 ## Team Updates
 
@@ -57,3 +60,5 @@
 - Regression coverage for local RSS should cover both seams: feed staging (`podcast.xml` plus copied enclosures) and actual HTTP serving, because the command must publish files and stay reachable on the LAN.
 
 📌 Team update (2026-04-26T09:10:13Z): Issue #23 resolved — RSS service now loads `my-project\.env` before resolving `PODCAST_BASE_URL`. Modified `services/rss.py`, added regression test coverage, rebuilt `data\rss\podcast.xml` with corrected base URL and metadata-derived titles. CLI `--public-host` override still works. LAN delivery operational as documented. Decided by Bishop
+
+📌 Team update (2026-04-26T121308Z): Issue #24 Langbly timeout failover — approved revision delivered. Merged Ash's translator failover implementation and added deliberate timeout error message in web UI. Modified `web.py` to format `LangblyTimeoutError` with explicit "no episode generated" message. Targeted regression tests cover translator failover, all-endpoints-down case, and web-layer message display. All 3 test modules passing; no regressions. Lambert approved for publication and closure. Decided by Bishop

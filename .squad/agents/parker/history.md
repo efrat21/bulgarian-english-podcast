@@ -14,6 +14,9 @@
 - Google voice routing now lives in `my-project\\src\\knigovishte_podcast\\services\\tts.py`: `en-US-*` and `bg-BG-*` voice names are treated as Google Cloud voices, while explicit local pyttsx3 substrings still route locally.
 - `my-project\\src\\knigovishte_podcast\\config.py` now carries both English and Bulgarian Google TTS defaults, sourced from `GOOGLE_TTS_EN_*` and `GOOGLE_TTS_BG_*` environment variables.
 - For issue #14, Parker selected `en-US-Standard-F` from the Google Cloud en-US Standard tier because it keeps standard-tier pricing and gives a clear neutral podcast read that pairs well with `bg-BG-Standard-B`.
+- `my-project\\src\\knigovishte_podcast\\services\\tts.py` now exports final episodes as `.mp3` after rendering an intermediate `.wav`; conversion uses `imageio-ffmpeg` so local pyttsx3 and Google LINEAR16 paths can share one deterministic export step.
+- `my-project\\src\\knigovishte_podcast\\services\\rss.py` now prefers `.mp3` when the same episode stem exists in multiple staged formats, while still accepting legacy `.wav`, `.m4a`, and `.aac` files.
+- Verified quality commands for the app repo: `python -m unittest tests.test_tts tests.test_cli tests.test_rss tests.test_pipeline tests.test_dedup tests.test_scheduler tests.test_web -v`, `ruff check main.py src tests`, `mypy main.py src`, and `python -m build`.
 
 ## Recent Session (20260417T173826Z)
 
