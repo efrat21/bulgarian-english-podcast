@@ -20,7 +20,7 @@
 - (D#32) Google English voice routing: treat all `en-*` Google voices consistently (voice-name-first language derivation)
 
 **Active Work:**
-- Issue #14 (Google English voice): APPROVED — `en-US-Standard-F` selected, en-* routing consistent, regression coverage complete
+- Issue #21 (episode titles): Routed to Bishop — strip "vijte NNNN" prefix from RSS feed episode names, keep English title
 - Assigned issues: #9 (local web UI, Bishop), #8 (artifact dedup, Bishop)
 
 **Learnings (Historical):**
@@ -60,6 +60,13 @@
 - `my-project\README.md` is the live operator/developer guide for the CLI and now documents install, command usage, artifact layout, quality checks, and packaging expectations rather than scaffold-era planning notes.
 - The root Squad repo currently has no upstream configured for local `master`; after fetching on 2026-04-17 it was found to diverge from `origin/master` (local ahead 16, behind 7), so straight push cleanup can fail with a non-fast-forward rejection until remote changes are integrated.
 - Issues #8 (artifact deduplication) and #9 (local UI) triaged 2026-04-19; #8 assigned to Bishop, #9 flagged for architecture decision (web vs. desktop vs. CLI).
+
+## Recent Session (2026-04-26T084500Z)
+
+📌 **Issue Triage: #19, #21, #22**
+- Issue #19 (RSS hostname bug): **RESOLVED** — PR #20 merged 2026-04-26 08:32Z; UDP socket trick determines correct LAN IP. Triage note left; issue awaits closure confirmation.
+- Issue #21 (episode names): **ROUTED TO BISHOP** — Strip "vijte NNNN" prefix from RSS feed episode titles (services/rss.py line 128); keep only English title. Label: `squad:bishop`. Ready to execute.
+- Issue #22 (audio format): **BLOCKED — needs clarification** — Title requests format change but requirements missing (which format? why?). Triage note requests details before routing to Parker.
 
 ## Recent Session (2026-04-19T122809Z)
 
