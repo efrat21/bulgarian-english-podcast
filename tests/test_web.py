@@ -12,6 +12,7 @@ from knigovishte_podcast.config import ProjectPaths
 from knigovishte_podcast.models import Article, PodcastPlan, Translation
 from knigovishte_podcast.services.article_selector import ArticleFilter
 from knigovishte_podcast.services.dedup import DuplicateArticleError
+from knigovishte_podcast.services.translator import LangblyTimeoutError
 from knigovishte_podcast.web import create_app
 
 
@@ -37,7 +38,7 @@ class WebUiTests(unittest.TestCase):
             translation=self.translation,
             script_text="script",
             script_path=self.paths.scripts / "vijte-42-test.txt",
-            audio_path=self.paths.audio / "vijte-42-test.wav",
+            audio_path=self.paths.audio / "vijte-42-test.mp3",
             article_html_path=self.paths.articles / "vijte-42-test.html",
         )
 
@@ -133,7 +134,7 @@ class WebUiTests(unittest.TestCase):
         self.assertIn("Minimum length cannot be greater than maximum length.", response.get_data(as_text=True))
 
     def test_post_reports_existing_audio_for_duplicate_article(self) -> None:
-        existing_audio_path = self.paths.audio / "existing.wav"
+        existing_audio_path = self.paths.audio / "existing.mp3"
         existing_audio_path.write_bytes(b"audio")
         mock_pipeline = Mock()
         mock_pipeline.run.side_effect = DuplicateArticleError(
@@ -151,3 +152,27 @@ class WebUiTests(unittest.TestCase):
         self.assertNotIn("Existing audio reused", page)
         self.assertNotIn(str(existing_audio_path.resolve()), page)
         self.assertNotIn(f'href="{existing_audio_path.resolve().as_uri()}"', page)
+
+    def test_post_reports_langbly_timeout_with_deliberate_message(self) -> None:
+        mock_pipeline = Mock()
+        mock_pipeline.run.side_effect = LangblyTimeoutError(
+            "Langbly timed out after 12s per endpoint while trying "
+            "eu.langbly.com, api.langbly.com. No translation was returned."
+        )
+
+        with patch("knigovishte_podcast.web.pipeline", return_value=mock_pipeline):
+            client = create_app(self.paths).test_client()
+            response = client.post("/", data={"url": self.article.source_url})
+
+        self.assertEqual(response.status_code, 200)
+        page = response.get_data(as_text=True)
+        self.assertIn("Pipeline failed", page)
+        self.assertIn(
+            "Langbly timed out after 12s per endpoint while trying eu.langbly.com, "
+            "api.langbly.com. No translation was returned.",
+            page,
+        )
+        self.assertIn(
+            "The episode was not generated; please try again in a few minutes.",
+            page,
+        )

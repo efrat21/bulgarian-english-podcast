@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import socket
 import xml.etree.ElementTree as ET
@@ -12,15 +13,26 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import quote
 
+from dotenv import load_dotenv
+
 from ..config import ProjectPaths
 
 SUPPORTED_AUDIO_EXTENSIONS = (".mp3", ".m4a", ".aac", ".wav")
+AUDIO_EXTENSION_PRIORITY = {
+    ".mp3": 0,
+    ".m4a": 1,
+    ".aac": 2,
+    ".wav": 3,
+}
 CONTENT_TYPES = {
     ".mp3": "audio/mpeg",
     ".m4a": "audio/mp4",
     ".aac": "audio/aac",
     ".wav": "audio/wav",
 }
+EPISODE_METADATA_SUFFIXES = (".translation.txt", ".txt")
+ENGLISH_TITLE_LABEL = "english title"
+VIJTE_PREFIX_PATTERN = re.compile(r"^vijte-\d+(?:-|$)", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -41,6 +53,7 @@ class LocalRSSService:
         port: int,
         public_host: str | None = None,
     ) -> str:
+        self._load_project_env()
         # Explicit --public-host flag takes highest priority.
         if public_host:
             return f"http://{public_host}:{port}"
@@ -86,6 +99,11 @@ class LocalRSSService:
         handler = partial(SimpleHTTPRequestHandler, directory=str(self.paths.rss))
         return ThreadingHTTPServer((host, port), handler)
 
+    def _load_project_env(self) -> None:
+        env_file = self.paths.root / ".env"
+        if env_file.is_file():
+            load_dotenv(env_file, override=False)
+
     def _default_public_host(self, bind_host: str) -> str:
         if bind_host in {"0.0.0.0", "::", ""}:
             try:
@@ -97,12 +115,22 @@ class LocalRSSService:
         return bind_host
 
     def _discover_audio_files(self) -> list[Path]:
-        files = [
-            path
-            for path in self.paths.audio.iterdir()
-            if path.is_file() and path.suffix.lower() in SUPPORTED_AUDIO_EXTENSIONS
-        ]
-        return sorted(files, key=lambda path: (-path.stat().st_mtime, path.name.lower()))
+        discovered: dict[str, Path] = {}
+        for path in self.paths.audio.iterdir():
+            if not path.is_file() or path.suffix.lower() not in SUPPORTED_AUDIO_EXTENSIONS:
+                continue
+            existing = discovered.get(path.stem)
+            if existing is None:
+                discovered[path.stem] = path
+                continue
+            if AUDIO_EXTENSION_PRIORITY[path.suffix.lower()] < AUDIO_EXTENSION_PRIORITY[
+                existing.suffix.lower()
+            ]:
+                discovered[path.stem] = path
+        return sorted(
+            discovered.values(),
+            key=lambda path: (-path.stat().st_mtime, path.name.lower()),
+        )
 
     def _clean_directory(self, directory: Path) -> None:
         directory.mkdir(parents=True, exist_ok=True)
@@ -130,7 +158,7 @@ class LocalRSSService:
 
         for staged_path in staged_episode_paths:
             item = ET.SubElement(channel, "item")
-            title = staged_path.stem.replace("-", " ").strip() or staged_path.stem
+            title = self._episode_title_from_path(staged_path)
             enclosure_url = f"{public_base_url}/episodes/{quote(staged_path.name)}"
             stat = staged_path.stat()
             published_at = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
@@ -146,3 +174,34 @@ class LocalRSSService:
             )
 
         return ET.tostring(rss, encoding="utf-8", xml_declaration=True)
+
+    def _episode_title_from_path(self, path: Path) -> str:
+        metadata_title = self._episode_title_from_metadata(path.stem)
+        if metadata_title:
+            return metadata_title
+
+        normalized_stem = VIJTE_PREFIX_PATTERN.sub("", path.stem)
+        title = normalized_stem.replace("-", " ").strip()
+        if title:
+            return title
+        return path.stem.replace("-", " ").strip() or path.stem
+
+    def _episode_title_from_metadata(self, episode_stem: str) -> str | None:
+        for suffix in EPISODE_METADATA_SUFFIXES:
+            metadata_path = self.paths.scripts / f"{episode_stem}{suffix}"
+            title = self._english_title_from_file(metadata_path)
+            if title:
+                return title
+        return None
+
+    def _english_title_from_file(self, path: Path) -> str | None:
+        if not path.is_file():
+            return None
+
+        for line in path.read_text(encoding="utf-8").splitlines():
+            label, separator, value = line.partition(":")
+            if separator and label.strip().lower() == ENGLISH_TITLE_LABEL:
+                title = value.strip()
+                if title:
+                    return title
+        return None

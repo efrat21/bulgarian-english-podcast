@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import subprocess
 import wave
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -15,7 +16,8 @@ from ..config import (
     google_language_code_from_voice_name,
 )
 
-AUDIO_FILE_EXTENSION = ".wav"
+AUDIO_FILE_EXTENSION = ".mp3"
+_INTERMEDIATE_AUDIO_FILE_EXTENSION = ".wav"
 DEFAULT_EN_GOOGLE_VOICE = "en-US-Standard-F"
 DEFAULT_BG_GOOGLE_VOICE = "bg-BG-Standard-B"
 _COM_ALREADY_INITIALIZED = 1
@@ -35,7 +37,13 @@ try:
 except ImportError:
     _google_texttospeech = None
 
+try:
+    import imageio_ffmpeg as _imageio_ffmpeg
+except ImportError:
+    _imageio_ffmpeg = None
+
 google_texttospeech: Any | None = _google_texttospeech
+imageio_ffmpeg: Any | None = _imageio_ffmpeg
 
 
 class PodcastAudioGenerator(ABC):
@@ -82,14 +90,27 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         project_paths.ensure()
 
         audio_path = project_paths.audio / f"{normalized_slug}{AUDIO_FILE_EXTENSION}"
+        intermediate_audio_path = (
+            project_paths.audio / f"_{normalized_slug}{_INTERMEDIATE_AUDIO_FILE_EXTENSION}"
+        )
         audio_path.parent.mkdir(parents=True, exist_ok=True)
         if audio_path.exists():
             audio_path.unlink()
+        intermediate_audio_path.unlink(missing_ok=True)
 
-        if self.bg_voice_name is not None:
-            self._generate_bilingual(script_text, audio_path)
-        else:
-            self._generate_single_voice(script_text, audio_path)
+        try:
+            if self.bg_voice_name is not None:
+                self._generate_bilingual(script_text, intermediate_audio_path)
+            else:
+                self._generate_single_voice(script_text, intermediate_audio_path)
+            if not intermediate_audio_path.exists():
+                raise RuntimeError(
+                    "Audio generation failed; intermediate WAV was not created: "
+                    f"{intermediate_audio_path}"
+                )
+            _convert_wav_to_mp3(intermediate_audio_path, audio_path)
+        finally:
+            intermediate_audio_path.unlink(missing_ok=True)
 
         if not audio_path.exists():
             raise RuntimeError(
@@ -135,7 +156,10 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         temp_files: list[Path] = []
         try:
             for i, (lang, text) in enumerate(segments):
-                temp_path = audio_path.parent / f"_{audio_path.stem}_part{i}{AUDIO_FILE_EXTENSION}"
+                temp_path = (
+                    audio_path.parent
+                    / f"_{audio_path.stem}_part{i}{_INTERMEDIATE_AUDIO_FILE_EXTENSION}"
+                )
                 voice_name = self.bg_voice_name if lang == "bg" else self.voice_name
                 if _should_route_google(lang, voice_name):
                     self._synthesize_google_segment(
@@ -362,3 +386,43 @@ def _concatenate_wav_files(input_paths: list[Path], output_path: Path) -> None:
                 if i == 0:
                     out_wav.setparams(in_wav.getparams())
                 out_wav.writeframes(in_wav.readframes(in_wav.getnframes()))
+
+
+def _convert_wav_to_mp3(input_path: Path, output_path: Path) -> None:
+    ffmpeg_api = imageio_ffmpeg
+    if ffmpeg_api is None:
+        raise RuntimeError(
+            "MP3 export is unavailable. Install imageio-ffmpeg to convert rendered WAV audio."
+        )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.unlink(missing_ok=True)
+    try:
+        ffmpeg_path = ffmpeg_api.get_ffmpeg_exe()
+    except Exception as exc:
+        raise RuntimeError("MP3 export is unavailable because FFmpeg could not be resolved.") from exc
+
+    try:
+        subprocess.run(
+            [
+                ffmpeg_path,
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                str(input_path),
+                "-vn",
+                "-codec:a",
+                "libmp3lame",
+                "-b:a",
+                "128k",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        message = exc.stderr.strip() or exc.stdout.strip() or str(exc)
+        raise RuntimeError(f"MP3 export failed: {message}") from exc

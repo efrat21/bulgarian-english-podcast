@@ -19,6 +19,7 @@ from knigovishte_podcast.services.dedup import (
     ArticleAudioManifest,
     DuplicateArticleError,
 )
+from knigovishte_podcast.services.tts import AUDIO_FILE_EXTENSION
 
 
 class StubFetcher:
@@ -65,7 +66,7 @@ class StubAudioGenerator:
     def generate(self, script_text: str, episode_slug: str) -> Path:
         self.calls.append((script_text, episode_slug))
         self.audio_root.mkdir(parents=True, exist_ok=True)
-        audio_path = self.audio_root / f"{episode_slug}.wav"
+        audio_path = self.audio_root / f"{episode_slug}{AUDIO_FILE_EXTENSION}"
         audio_path.write_bytes(b"audio")
         return audio_path
 
@@ -122,7 +123,7 @@ class ArticleToPodcastPipelineTests(unittest.TestCase):
         expected_slug = episode_slug_from_url(self.article.source_url)
         expected_html_path = self.paths.articles / f"{expected_slug}.html"
         expected_script_path = self.paths.scripts / f"{expected_slug}.txt"
-        expected_audio_path = self.paths.audio / f"{expected_slug}.wav"
+        expected_audio_path = self.paths.audio / f"{expected_slug}{AUDIO_FILE_EXTENSION}"
 
         self.assertEqual(fetcher.fetch_html_calls, 1)
         self.assertEqual(fetcher.parse_html_calls, 1)
@@ -172,7 +173,7 @@ class ArticleToPodcastPipelineTests(unittest.TestCase):
         self.assertEqual(audio_generator.calls, [(self.script_text, episode_slug_from_url(self.article.source_url))])
 
     def test_run_raises_duplicate_article_error_when_audio_already_exists(self) -> None:
-        existing_audio_path = self.paths.audio / "existing.wav"
+        existing_audio_path = self.paths.audio / f"existing{AUDIO_FILE_EXTENSION}"
         existing_audio_path.write_bytes(b"audio")
         article_manifest = ArticleAudioManifest.for_paths(self.paths)
         article_manifest.record(self.article, existing_audio_path)
@@ -253,7 +254,7 @@ class CliRunCommandTests(unittest.TestCase):
             translation=translation,
             script_text="script",
             script_path=self.paths.scripts / "vijte-42-test.txt",
-            audio_path=self.paths.audio / "vijte-42-test.wav",
+            audio_path=self.paths.audio / f"vijte-42-test{AUDIO_FILE_EXTENSION}",
             article_html_path=self.paths.articles / "vijte-42-test.html",
         )
         mock_pipeline = Mock()
@@ -284,7 +285,7 @@ class CliRunCommandTests(unittest.TestCase):
             title_bg="Българско заглавие",
             sentences_bg=("Едно изречение.",),
         )
-        existing_audio_path = self.paths.audio / "vijte-42-test.wav"
+        existing_audio_path = self.paths.audio / f"vijte-42-test{AUDIO_FILE_EXTENSION}"
         existing_audio_path.write_bytes(b"audio")
         stdout = io.StringIO()
         mock_pipeline = Mock()

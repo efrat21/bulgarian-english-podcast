@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import subprocess
 import sys
 import unittest
 import wave
@@ -14,10 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from knigovishte_podcast.config import GoogleTTSConfig
 from knigovishte_podcast.services.tts import (
+    AUDIO_FILE_EXTENSION,
     DEFAULT_BG_GOOGLE_VOICE,
     DEFAULT_EN_GOOGLE_VOICE,
     Pyttsx3PodcastAudioGenerator,
     _concatenate_wav_files,
+    _convert_wav_to_mp3,
     _split_script_by_language,
     _windows_com_initialized,
     build_default_audio_generator,
@@ -28,6 +31,10 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
     @contextmanager
     def _noop_com_context(self):
         yield
+
+    def _fake_mp3_export(self, input_path: Path, output_path: Path) -> None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(input_path.read_bytes() or b"dummy mp3")
 
     def test_generate_returns_expected_path_and_invokes_engine(self) -> None:
         with TemporaryDirectory() as tmpdir:
@@ -41,11 +48,12 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                     self.audio.mkdir(parents=True, exist_ok=True)
 
             mock_engine = Mock()
-            audio_path = project_root / "audio" / "episode-slug.wav"
+            intermediate_audio_path = project_root / "audio" / "_episode-slug.wav"
+            audio_path = project_root / "audio" / f"episode-slug{AUDIO_FILE_EXTENSION}"
 
             def run_and_wait_side_effect() -> None:
-                audio_path.parent.mkdir(parents=True, exist_ok=True)
-                audio_path.write_bytes(b"dummy audio")
+                intermediate_audio_path.parent.mkdir(parents=True, exist_ok=True)
+                intermediate_audio_path.write_bytes(b"dummy audio")
 
             mock_engine.runAndWait.side_effect = run_and_wait_side_effect
 
@@ -58,12 +66,16 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                     self._noop_com_context,
                 ):
                     with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine) as mock_init:
-                        generator = Pyttsx3PodcastAudioGenerator(rate=150, volume=0.8)
-                        result_path = generator.generate("Hello world", "episode-slug")
+                        with patch(
+                            "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                            side_effect=self._fake_mp3_export,
+                        ):
+                            generator = Pyttsx3PodcastAudioGenerator(rate=150, volume=0.8)
+                            result_path = generator.generate("Hello world", "episode-slug")
 
             self.assertEqual(result_path, audio_path)
             mock_init.assert_called_once()
-            mock_engine.save_to_file.assert_called_once_with("Hello world", str(audio_path))
+            mock_engine.save_to_file.assert_called_once_with("Hello world", str(intermediate_audio_path))
             mock_engine.runAndWait.assert_called_once()
 
     def test_generate_raises_on_empty_script_text(self) -> None:
@@ -91,11 +103,11 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
             mock_engine.getProperty.return_value = [
                 SimpleNamespace(id="voice-1", name="English Voice"),
             ]
-            audio_path = project_root / "audio" / "episode-slug.wav"
+            intermediate_audio_path = project_root / "audio" / "_episode-slug.wav"
 
             def run_and_wait_side_effect() -> None:
-                audio_path.parent.mkdir(parents=True, exist_ok=True)
-                audio_path.write_bytes(b"dummy audio")
+                intermediate_audio_path.parent.mkdir(parents=True, exist_ok=True)
+                intermediate_audio_path.write_bytes(b"dummy audio")
 
             mock_engine.runAndWait.side_effect = run_and_wait_side_effect
 
@@ -108,8 +120,12 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                     self._noop_com_context,
                 ):
                     with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
-                        generator = Pyttsx3PodcastAudioGenerator(voice_name="english")
-                        generator.generate("Hello world", "episode-slug")
+                        with patch(
+                            "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                            side_effect=self._fake_mp3_export,
+                        ):
+                            generator = Pyttsx3PodcastAudioGenerator(voice_name="english")
+                            generator.generate("Hello world", "episode-slug")
 
             mock_engine.setProperty.assert_any_call("voice", "voice-1")
 
@@ -180,7 +196,7 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                     self.audio.mkdir(parents=True, exist_ok=True)
 
             mock_engine = Mock()
-            audio_path = project_root / "audio" / "episode-slug.wav"
+            audio_path = project_root / "audio" / f"episode-slug{AUDIO_FILE_EXTENSION}"
             audio_path.parent.mkdir(parents=True, exist_ok=True)
             audio_path.write_bytes(b"stale audio")
 
@@ -211,11 +227,11 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                     self.audio.mkdir(parents=True, exist_ok=True)
 
             mock_engine = Mock()
-            audio_path = project_root / "audio" / "episode-slug.wav"
+            intermediate_audio_path = project_root / "audio" / "_episode-slug.wav"
 
             def run_and_wait_side_effect() -> None:
-                audio_path.parent.mkdir(parents=True, exist_ok=True)
-                audio_path.write_bytes(b"dummy audio")
+                intermediate_audio_path.parent.mkdir(parents=True, exist_ok=True)
+                intermediate_audio_path.write_bytes(b"dummy audio")
 
             mock_engine.runAndWait.side_effect = run_and_wait_side_effect
             com_context = MagicMock()
@@ -229,8 +245,12 @@ class PodcastAudioGeneratorTests(unittest.TestCase):
                     return_value=com_context,
                 ) as com_init:
                     with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
-                        generator = Pyttsx3PodcastAudioGenerator()
-                        generator.generate("Hello world", "episode-slug")
+                        with patch(
+                            "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                            side_effect=self._fake_mp3_export,
+                        ):
+                            generator = Pyttsx3PodcastAudioGenerator()
+                            generator.generate("Hello world", "episode-slug")
 
             com_init.assert_called_once_with()
             com_context.__enter__.assert_called_once_with()
@@ -345,6 +365,10 @@ class ConcatenateWavFilesTests(unittest.TestCase):
 
 
 class BilingualAudioGeneratorTests(unittest.TestCase):
+    def _fake_mp3_export(self, input_path: Path, output_path: Path) -> None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_bytes(input_path.read_bytes() or b"dummy mp3")
+
     def _make_dummy_engine(self, audio_path: Path) -> Mock:
         """Return a mock pyttsx3 engine whose runAndWait writes a minimal WAV."""
 
@@ -386,7 +410,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                 def ensure(self) -> None:
                     self.audio.mkdir(parents=True, exist_ok=True)
 
-            audio_path = project_root / "audio" / "ep.wav"
+            audio_path = project_root / "audio" / f"ep{AUDIO_FILE_EXTENSION}"
             mock_engine = self._make_dummy_engine(audio_path)
 
             script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
@@ -399,11 +423,15 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                     "knigovishte_podcast.services.tts.pyttsx3.init",
                     return_value=mock_engine,
                 ):
-                    generator = Pyttsx3PodcastAudioGenerator(
-                        voice_name="english",
-                        bg_voice_name="bulgarian",
-                    )
-                    result = generator.generate(script, "ep")
+                    with patch(
+                        "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                        side_effect=self._fake_mp3_export,
+                    ):
+                        generator = Pyttsx3PodcastAudioGenerator(
+                            voice_name="english",
+                            bg_voice_name="bulgarian",
+                        )
+                        result = generator.generate(script, "ep")
 
             self.assertTrue(result.exists())
             set_voice_calls = [
@@ -424,7 +452,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                 def ensure(self) -> None:
                     self.audio.mkdir(parents=True, exist_ok=True)
 
-            audio_path = project_root / "audio" / "ep.wav"
+            audio_path = project_root / "audio" / f"ep{AUDIO_FILE_EXTENSION}"
             mock_engine = self._make_dummy_engine(audio_path)
 
             script = "English title: Foo\nBulgarian title: Бар\n\nHello.\nЗдравей."
@@ -437,11 +465,15 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                     "knigovishte_podcast.services.tts.pyttsx3.init",
                     return_value=mock_engine,
                 ):
-                    generator = Pyttsx3PodcastAudioGenerator(
-                        voice_name="english",
-                        bg_voice_name="bulgarian",
-                    )
-                    generator.generate(script, "ep")
+                    with patch(
+                        "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                        side_effect=self._fake_mp3_export,
+                    ):
+                        generator = Pyttsx3PodcastAudioGenerator(
+                            voice_name="english",
+                            bg_voice_name="bulgarian",
+                        )
+                        generator.generate(script, "ep")
 
             # Temporary part files must be removed after generation.
             temp_files = list((project_root / "audio").glob("_ep_part*.wav"))
@@ -491,7 +523,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                 def ensure(self) -> None:
                     self.audio.mkdir(parents=True, exist_ok=True)
 
-            audio_path = project_root / "audio" / "ep.wav"
+            audio_path = project_root / "audio" / f"ep{AUDIO_FILE_EXTENSION}"
             mock_engine = self._make_dummy_engine(audio_path)
             google_client = Mock()
             google_client.synthesize_speech.return_value = SimpleNamespace(
@@ -518,18 +550,22 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                         "knigovishte_podcast.services.tts.google_texttospeech",
                         fake_google,
                     ):
-                        generator = Pyttsx3PodcastAudioGenerator(
-                            voice_name="english",
-                            bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
-                            google_tts_config=GoogleTTSConfig(
-                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
-                                en_language_code="en-US",
+                        with patch(
+                            "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                            side_effect=self._fake_mp3_export,
+                        ):
+                            generator = Pyttsx3PodcastAudioGenerator(
+                                voice_name="english",
                                 bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
-                                bg_language_code="bg-BG",
-                            ),
-                            google_client=google_client,
-                        )
-                        result = generator.generate(script, "ep")
+                                google_tts_config=GoogleTTSConfig(
+                                    en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                    en_language_code="en-US",
+                                    bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+                                    bg_language_code="bg-BG",
+                                ),
+                                google_client=google_client,
+                            )
+                            result = generator.generate(script, "ep")
 
             self.assertTrue(result.exists())
             self.assertEqual(google_client.synthesize_speech.call_count, 2)
@@ -571,17 +607,21 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                         "knigovishte_podcast.services.tts.google_texttospeech",
                         fake_google,
                     ):
-                        generator = Pyttsx3PodcastAudioGenerator(
-                            voice_name=DEFAULT_EN_GOOGLE_VOICE,
-                            google_tts_config=GoogleTTSConfig(
-                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
-                                en_language_code="en-US",
-                                bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
-                                bg_language_code="bg-BG",
-                            ),
-                            google_client=google_client,
-                        )
-                        result = generator.generate("Hello world", "ep")
+                        with patch(
+                            "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                            side_effect=self._fake_mp3_export,
+                        ):
+                            generator = Pyttsx3PodcastAudioGenerator(
+                                voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                google_tts_config=GoogleTTSConfig(
+                                    en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                    en_language_code="en-US",
+                                    bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+                                    bg_language_code="bg-BG",
+                                ),
+                                google_client=google_client,
+                            )
+                            result = generator.generate("Hello world", "ep")
 
             self.assertTrue(result.exists())
             init_local.assert_not_called()
@@ -623,17 +663,21 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                         "knigovishte_podcast.services.tts.google_texttospeech",
                         fake_google,
                     ):
-                        generator = Pyttsx3PodcastAudioGenerator(
-                            voice_name=english_override,
-                            google_tts_config=GoogleTTSConfig(
-                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
-                                en_language_code="en-US",
-                                bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
-                                bg_language_code="bg-BG",
-                            ),
-                            google_client=google_client,
-                        )
-                        result = generator.generate("Hello world", "ep")
+                        with patch(
+                            "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                            side_effect=self._fake_mp3_export,
+                        ):
+                            generator = Pyttsx3PodcastAudioGenerator(
+                                voice_name=english_override,
+                                google_tts_config=GoogleTTSConfig(
+                                    en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                    en_language_code="en-US",
+                                    bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+                                    bg_language_code="bg-BG",
+                                ),
+                                google_client=google_client,
+                            )
+                            result = generator.generate("Hello world", "ep")
 
             self.assertTrue(result.exists())
             init_local.assert_not_called()
@@ -654,7 +698,7 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                 def ensure(self) -> None:
                     self.audio.mkdir(parents=True, exist_ok=True)
 
-            audio_path = project_root / "audio" / "ep.wav"
+            audio_path = project_root / "audio" / f"ep{AUDIO_FILE_EXTENSION}"
             mock_engine = self._make_dummy_engine(audio_path)
             google_client = Mock()
             google_client.synthesize_speech.return_value = SimpleNamespace(
@@ -681,18 +725,22 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
                         "knigovishte_podcast.services.tts.google_texttospeech",
                         fake_google,
                     ):
-                        generator = Pyttsx3PodcastAudioGenerator(
-                            voice_name=english_override,
-                            bg_voice_name="bulgarian",
-                            google_tts_config=GoogleTTSConfig(
-                                en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
-                                en_language_code="en-US",
-                                bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
-                                bg_language_code="bg-BG",
-                            ),
-                            google_client=google_client,
-                        )
-                        result = generator.generate(script, "ep")
+                        with patch(
+                            "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                            side_effect=self._fake_mp3_export,
+                        ):
+                            generator = Pyttsx3PodcastAudioGenerator(
+                                voice_name=english_override,
+                                bg_voice_name="bulgarian",
+                                google_tts_config=GoogleTTSConfig(
+                                    en_voice_name=DEFAULT_EN_GOOGLE_VOICE,
+                                    en_language_code="en-US",
+                                    bg_voice_name=DEFAULT_BG_GOOGLE_VOICE,
+                                    bg_language_code="bg-BG",
+                                ),
+                                google_client=google_client,
+                            )
+                            result = generator.generate(script, "ep")
 
             self.assertTrue(result.exists())
             synthesize_calls = google_client.synthesize_speech.call_args_list
@@ -733,6 +781,65 @@ class BuildDefaultAudioGeneratorTests(unittest.TestCase):
         self.assertEqual(generator.voice_name, DEFAULT_EN_GOOGLE_VOICE)
         self.assertEqual(generator.bg_voice_name, DEFAULT_BG_GOOGLE_VOICE)
         self.assertEqual(generator.google_tts_config, config)
+
+
+class ConvertWavToMp3Tests(unittest.TestCase):
+    def test_convert_wav_to_mp3_invokes_ffmpeg(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            input_path = root / "episode.wav"
+            output_path = root / "episode.mp3"
+            input_path.write_bytes(b"wav")
+
+            with patch(
+                "knigovishte_podcast.services.tts.imageio_ffmpeg",
+                SimpleNamespace(get_ffmpeg_exe=lambda: "ffmpeg.exe"),
+            ):
+                with patch("knigovishte_podcast.services.tts.subprocess.run") as run_mock:
+                    _convert_wav_to_mp3(input_path, output_path)
+
+        run_mock.assert_called_once_with(
+            [
+                "ffmpeg.exe",
+                "-y",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-i",
+                str(input_path),
+                "-vn",
+                "-codec:a",
+                "libmp3lame",
+                "-b:a",
+                "128k",
+                str(output_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    def test_convert_wav_to_mp3_surfaces_ffmpeg_errors(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            input_path = root / "episode.wav"
+            output_path = root / "episode.mp3"
+            input_path.write_bytes(b"wav")
+
+            with patch(
+                "knigovishte_podcast.services.tts.imageio_ffmpeg",
+                SimpleNamespace(get_ffmpeg_exe=lambda: "ffmpeg.exe"),
+            ):
+                with patch(
+                    "knigovishte_podcast.services.tts.subprocess.run",
+                    side_effect=subprocess.CalledProcessError(
+                        returncode=1,
+                        cmd=["ffmpeg.exe"],
+                        stderr="encoder failed",
+                    ),
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "MP3 export failed: encoder failed"):
+                        _convert_wav_to_mp3(input_path, output_path)
 
 
 if __name__ == "__main__":

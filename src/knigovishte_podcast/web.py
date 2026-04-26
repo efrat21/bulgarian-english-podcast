@@ -9,6 +9,7 @@ from .models import PodcastPlan
 from .pipeline import pipeline
 from .services.article_selector import ArticleFilter, ArticleSelector
 from .services.dedup import DuplicateArticleError
+from .services.translator import LangblyTimeoutError
 
 WEB_CATEGORIES: tuple[tuple[str, str], ...] = (
     ("obshtestvo", "Society"),
@@ -148,7 +149,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                     "artifacts": [_artifact("Audio output", exc.audio_path)],
                 }
             except Exception as exc:
-                error = str(exc)
+                error = _format_error(exc)
 
         return render_template_string(
             PAGE_TEMPLATE,
@@ -256,6 +257,12 @@ def _build_success_result(plan: PodcastPlan, selection_message: str) -> dict[str
         "translated_title": plan.translation.title_en,
         "artifacts": artifacts,
     }
+
+
+def _format_error(exc: Exception) -> str:
+    if isinstance(exc, LangblyTimeoutError):
+        return f"{exc} The episode was not generated; please try again in a few minutes."
+    return str(exc)
 
 
 def _artifact(label: str, path: Path) -> dict[str, str]:

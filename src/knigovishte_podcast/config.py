@@ -8,6 +8,8 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
+DEFAULT_LANGBLY_BASE_URL = "https://api.langbly.com"
+
 
 @dataclass(frozen=True)
 class ProjectPaths:
@@ -57,9 +59,23 @@ def episode_slug_from_url(url: str) -> str:
 @dataclass(frozen=True)
 class TranslationConfig:
     api_key: str
-    base_url: str = "https://api.langbly.com"
+    base_url: str = DEFAULT_LANGBLY_BASE_URL
     source_lang: str = "bg"
     target_lang: str = "en"
+    timeout_seconds: float = 60.0
+    max_retries: int = 0
+    retry_backoff_seconds: float = 1.0
+    fallback_base_urls: tuple[str, ...] = ()
+
+    def all_base_urls(self) -> tuple[str, ...]:
+        seen: set[str] = set()
+        urls: list[str] = []
+        for base_url in (self.base_url, *self.fallback_base_urls):
+            normalized_url = base_url.rstrip("/")
+            if normalized_url and normalized_url not in seen:
+                seen.add(normalized_url)
+                urls.append(normalized_url)
+        return tuple(urls)
 
     @classmethod
     def from_env(cls, project_root: Path | None = None) -> "TranslationConfig":
@@ -77,8 +93,29 @@ class TranslationConfig:
                 "Create .env with LANGBLY_API_KEY=your_key"
             )
         
-        base_url = os.getenv("LANGBLY_BASE_URL", "https://api.langbly.com")
-        return cls(api_key=api_key, base_url=base_url)
+        base_url = os.getenv("LANGBLY_BASE_URL", DEFAULT_LANGBLY_BASE_URL).strip()
+        if not base_url:
+            base_url = DEFAULT_LANGBLY_BASE_URL
+
+        fallback_base_urls = tuple(
+            value.strip()
+            for value in os.getenv("LANGBLY_FALLBACK_BASE_URLS", "").split(",")
+            if value.strip()
+        )
+        if base_url.rstrip("/") != DEFAULT_LANGBLY_BASE_URL:
+            fallback_base_urls = (DEFAULT_LANGBLY_BASE_URL, *fallback_base_urls)
+
+        return cls(
+            api_key=api_key,
+            base_url=base_url,
+            timeout_seconds=_read_positive_float_env("LANGBLY_TIMEOUT_SECONDS", default=60.0),
+            max_retries=_read_non_negative_int_env("LANGBLY_MAX_RETRIES", default=0),
+            retry_backoff_seconds=_read_non_negative_float_env(
+                "LANGBLY_RETRY_BACKOFF_SECONDS",
+                default=1.0,
+            ),
+            fallback_base_urls=fallback_base_urls,
+        )
 
 
 @dataclass(frozen=True)
@@ -117,3 +154,33 @@ def google_language_code_from_voice_name(voice_name: str, *, fallback: str) -> s
     if len(parts) >= 2 and parts[0] and parts[1]:
         return f"{parts[0]}-{parts[1]}"
     return fallback
+
+
+def _read_positive_float_env(name: str, *, default: float) -> float:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    parsed_value = float(value)
+    if parsed_value <= 0:
+        raise ValueError(f"{name} must be greater than 0")
+    return parsed_value
+
+
+def _read_non_negative_float_env(name: str, *, default: float) -> float:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    parsed_value = float(value)
+    if parsed_value < 0:
+        raise ValueError(f"{name} must be 0 or greater")
+    return parsed_value
+
+
+def _read_non_negative_int_env(name: str, *, default: int) -> int:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    parsed_value = int(value)
+    if parsed_value < 0:
+        raise ValueError(f"{name} must be 0 or greater")
+    return parsed_value

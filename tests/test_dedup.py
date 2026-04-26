@@ -32,7 +32,7 @@ class ArticleAudioManifestTests(unittest.TestCase):
             title_bg="Българско заглавие",
             sentences_bg=("Едно изречение.", "Още едно изречение."),
         )
-        audio_path = self.paths.audio / "vijte-42-test.wav"
+        audio_path = self.paths.audio / "vijte-42-test.mp3"
         audio_path.write_bytes(b"audio")
 
         self.manifest.record(article, audio_path)
@@ -53,7 +53,7 @@ class ArticleAudioManifestTests(unittest.TestCase):
             title_bg="Българско заглавие",
             sentences_bg=("Едно изречение.",),
         )
-        audio_path = self.paths.audio / "vijte-42-test.wav"
+        audio_path = self.paths.audio / "vijte-42-test.mp3"
         audio_path.write_bytes(b"audio")
 
         self.manifest.record(first_article, audio_path)

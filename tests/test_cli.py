@@ -15,6 +15,7 @@ from knigovishte_podcast.config import ProjectPaths, episode_slug_from_url
 from knigovishte_podcast.models import Article, Translation
 from knigovishte_podcast.services.dedup import ArticleAudioManifest
 from knigovishte_podcast.services.rss import FeedBuildResult
+from knigovishte_podcast.services.tts import AUDIO_FILE_EXTENSION
 
 
 class StubFetcher:
@@ -51,7 +52,7 @@ class StubAudioGenerator:
     def generate(self, script_text: str, episode_slug: str) -> Path:
         self.calls.append((script_text, episode_slug))
         self.audio_root.mkdir(parents=True, exist_ok=True)
-        audio_path = self.audio_root / f"{episode_slug}.wav"
+        audio_path = self.audio_root / f"{episode_slug}{AUDIO_FILE_EXTENSION}"
         audio_path.write_bytes(b"audio")
         return audio_path
 
@@ -95,7 +96,7 @@ class CliCommandTests(unittest.TestCase):
             f"Translation output: {self.paths.scripts / f'{slug}.translation.txt'}",
             output,
         )
-        self.assertIn(f"Audio output: {self.paths.audio / f'{slug}.wav'}", output)
+        self.assertIn(f"Audio output: {self.paths.audio / f'{slug}{AUDIO_FILE_EXTENSION}'}", output)
 
     def test_fetch_command_reuses_cached_html_and_reports_cache(self) -> None:
         slug = episode_slug_from_url(self.article.source_url)
@@ -166,7 +167,7 @@ class CliCommandTests(unittest.TestCase):
         audio_generator = StubAudioGenerator(self.paths.audio)
         stdout = io.StringIO()
         slug = episode_slug_from_url(self.article.source_url)
-        expected_audio_path = self.paths.audio / f"{slug}.wav"
+        expected_audio_path = self.paths.audio / f"{slug}{AUDIO_FILE_EXTENSION}"
         expected_script_path = self.paths.scripts / f"{slug}.txt"
 
         with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
@@ -227,7 +228,7 @@ class CliCommandTests(unittest.TestCase):
 
     def test_generate_audio_command_skips_duplicate_article(self) -> None:
         fetcher = StubFetcher(self.article, self.html)
-        existing_audio_path = self.paths.audio / "already-generated.wav"
+        existing_audio_path = self.paths.audio / f"already-generated{AUDIO_FILE_EXTENSION}"
         existing_audio_path.write_bytes(b"audio")
         ArticleAudioManifest.for_paths(self.paths).record(self.article, existing_audio_path)
         stdout = io.StringIO()
@@ -301,7 +302,7 @@ class CliCommandTests(unittest.TestCase):
             with patch("knigovishte_podcast.cli.build_pipeline") as build_pipeline_mock:
                 mock_pipeline = Mock()
                 mock_pipeline.run.return_value = Mock(
-                    audio_path=self.paths.audio / "test.wav"
+                    audio_path=self.paths.audio / f"test{AUDIO_FILE_EXTENSION}"
                 )
                 build_pipeline_mock.return_value = mock_pipeline
 
@@ -325,7 +326,7 @@ class CliCommandTests(unittest.TestCase):
             with patch("knigovishte_podcast.cli.build_pipeline") as build_pipeline_mock:
                 mock_pipeline = Mock()
                 mock_pipeline.run.return_value = Mock(
-                    audio_path=self.paths.audio / "test.wav"
+                    audio_path=self.paths.audio / f"test{AUDIO_FILE_EXTENSION}"
                 )
                 build_pipeline_mock.return_value = mock_pipeline
 

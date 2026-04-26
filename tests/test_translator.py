@@ -9,9 +9,12 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from knigovishte_podcast.config import TranslationConfig
+from knigovishte_podcast.config import DEFAULT_LANGBLY_BASE_URL, TranslationConfig
 from knigovishte_podcast.models import Article, Translation
-from knigovishte_podcast.services.translator import LangblyTranslator
+from knigovishte_podcast.services.translator import (
+    LangblyTimeoutError,
+    LangblyTranslator,
+)
 
 
 class LangblyTranslatorTests(unittest.TestCase):
@@ -79,7 +82,7 @@ class LangblyTranslatorTests(unittest.TestCase):
                 "key": "test_key",
             },
             headers={"Authorization": "Bearer test_key"},
-            timeout=60,
+            timeout=60.0,
         )
 
     def test_translate_wraps_http_errors(self) -> None:
@@ -99,10 +102,88 @@ class LangblyTranslatorTests(unittest.TestCase):
     def test_translate_wraps_request_failures(self) -> None:
         with patch(
             "knigovishte_podcast.services.translator.requests.post",
-            side_effect=requests.exceptions.Timeout("timed out"),
+            side_effect=requests.exceptions.ConnectionError("unreachable"),
         ):
             with self.assertRaisesRegex(RuntimeError, "Failed to connect to Langbly API"):
                 LangblyTranslator(self.config).translate(self.article)
+
+    def test_translate_fails_over_to_default_base_url_after_timeout(self) -> None:
+        regional_config = TranslationConfig(
+            api_key="test_key",
+            base_url="https://eu.langbly.com",
+            fallback_base_urls=(DEFAULT_LANGBLY_BASE_URL,),
+        )
+        response = self._mock_response(
+            [
+                {"translatedText": "Test Article"},
+                {"translatedText": "First sentence."},
+                {"translatedText": "Second sentence."},
+            ]
+        )
+
+        with patch(
+            "knigovishte_podcast.services.translator.requests.post",
+            side_effect=[requests.exceptions.Timeout("timed out"), response],
+        ) as mock_post:
+            result = LangblyTranslator(regional_config).translate(self.article)
+
+        self.assertEqual(result.title_en, "Test Article")
+        self.assertEqual(mock_post.call_count, 2)
+        first_call = mock_post.call_args_list[0]
+        second_call = mock_post.call_args_list[1]
+        self.assertEqual(first_call.args[0], "https://eu.langbly.com/language/translate/v2")
+        self.assertEqual(second_call.args[0], "https://api.langbly.com/language/translate/v2")
+        self.assertEqual(first_call.kwargs["json"], second_call.kwargs["json"])
+        self.assertEqual(first_call.kwargs["headers"], second_call.kwargs["headers"])
+        self.assertEqual(first_call.kwargs["timeout"], 60.0)
+        self.assertEqual(second_call.kwargs["timeout"], 60.0)
+
+    def test_translate_raises_deliberate_timeout_after_all_endpoints_time_out(self) -> None:
+        regional_config = TranslationConfig(
+            api_key="test_key",
+            base_url="https://eu.langbly.com",
+            fallback_base_urls=(DEFAULT_LANGBLY_BASE_URL,),
+            timeout_seconds=12,
+        )
+
+        with patch(
+            "knigovishte_podcast.services.translator.requests.post",
+            side_effect=[
+                requests.exceptions.ReadTimeout("read timed out"),
+                requests.exceptions.ReadTimeout("read timed out"),
+            ],
+        ):
+            with self.assertRaises(LangblyTimeoutError) as context:
+                LangblyTranslator(regional_config).translate(self.article)
+
+        self.assertEqual(
+            str(context.exception),
+            "Langbly timed out after 12s per endpoint while trying "
+            "eu.langbly.com, api.langbly.com. No translation was returned.",
+        )
+
+    def test_translate_retries_retryable_server_errors(self) -> None:
+        response = Mock(spec=requests.Response)
+        response.status_code = 503
+        response.text = "Unavailable"
+        http_error = requests.exceptions.HTTPError("HTTP 503", response=response)
+        response.raise_for_status.side_effect = http_error
+        config = TranslationConfig(api_key="test_key", max_retries=1, retry_backoff_seconds=0)
+
+        with patch(
+            "knigovishte_podcast.services.translator.requests.post",
+            side_effect=[response, self._mock_response(
+                [
+                    {"translatedText": "Title"},
+                    {"translatedText": "Sentence 1"},
+                    {"translatedText": "Sentence 2"},
+                ]
+            )],
+        ) as mock_post:
+            result = LangblyTranslator(config).translate(self.article)
+
+        self.assertEqual(result.title_en, "Title")
+        self.assertEqual(mock_post.call_count, 2)
 
     def test_translate_rejects_mismatched_batch_response(self) -> None:
         response = self._mock_response([{"translatedText": "Title only"}])

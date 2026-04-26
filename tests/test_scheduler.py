@@ -21,7 +21,7 @@ class TestSchedulerState(unittest.TestCase):
         state = SchedulerState(
             last_check_time="2026-04-19T10:30:00",
             last_article_url="https://example.com/article",
-            last_episode_path="data/audio/episode.wav",
+            last_episode_path="data/audio/episode.mp3",
         )
         data = state.to_dict()
         restored = SchedulerState.from_dict(data)
@@ -75,7 +75,7 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
             title_bg="Тест заглавие",
             sentences_bg=["Изречение едно.", "Изречение две."],
         )
-        audio_path = self.paths.audio / "article-123.wav"
+        audio_path = self.paths.audio / "article-123.mp3"
         audio_path.touch()
 
         plan = PodcastPlan(
@@ -114,7 +114,7 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
         prior_state = SchedulerState(
             last_check_time=(datetime.now() - timedelta(days=1)).isoformat(),
             last_article_url=article.source_url,
-            last_episode_path="data/audio/article-123.wav",
+            last_episode_path="data/audio/article-123.mp3",
         )
         self.scheduler._save_state(prior_state)
 
@@ -134,7 +134,7 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
             title_bg="Ново заглавие",
             sentences_bg=["Ново изречение."],
         )
-        audio_path = self.paths.audio / "article-456.wav"
+        audio_path = self.paths.audio / "article-456.mp3"
         audio_path.touch()
 
         self.mock_selector.select_article.return_value = article
@@ -246,7 +246,7 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
         state = SchedulerState(
             last_check_time="2026-04-19T12:00:00",
             last_article_url="https://example.com/test",
-            last_episode_path="data/audio/test.wav",
+            last_episode_path="data/audio/test.mp3",
         )
 
         self.scheduler._save_state(state)

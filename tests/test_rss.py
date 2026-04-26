@@ -27,6 +27,24 @@ class LocalRSSServiceTests(unittest.TestCase):
         if self.workdir.exists():
             shutil.rmtree(self.workdir)
 
+    def _write_translation_metadata(self, episode_stem: str, english_title: str) -> None:
+        metadata_path = self.paths.scripts / f"{episode_stem}.translation.txt"
+        metadata_path.write_text(
+            f"Source URL: https://www.knigovishte.bg/vijte/7549\n"
+            f"Bulgarian title: Българско заглавие\n"
+            f"English title: {english_title}\n",
+            encoding="utf-8",
+        )
+
+    def _write_script_metadata(self, episode_stem: str, english_title: str) -> None:
+        metadata_path = self.paths.scripts / f"{episode_stem}.txt"
+        metadata_path.write_text(
+            f"Welcome to today's bilingual Knigovishte story.\n"
+            f"English title: {english_title}\n"
+            "Bulgarian title: Българско заглавие\n",
+            encoding="utf-8",
+        )
+
     def test_rebuild_feed_stages_supported_audio_and_cleans_stale_files(self) -> None:
         older_audio = self.paths.audio / "older.mp3"
         older_audio.write_bytes(b"older-audio")
@@ -50,11 +68,56 @@ class LocalRSSServiceTests(unittest.TestCase):
         self.assertIn('url="http://127.0.0.1:8000/episodes/newest.wav"', feed_text)
         self.assertIn('type="audio/wav"', feed_text)
 
+    def test_rebuild_feed_prefers_mp3_when_same_episode_has_multiple_formats(self) -> None:
+        wav_audio = self.paths.audio / "episode.wav"
+        mp3_audio = self.paths.audio / "episode.mp3"
+        wav_audio.write_bytes(b"wav-audio")
+        mp3_audio.write_bytes(b"mp3-audio")
+
+        result = self.service.rebuild_feed("http://127.0.0.1:8000")
+
+        self.assertEqual([path.name for path in result.staged_episode_paths], ["episode.mp3"])
+        feed_text = result.feed_path.read_text(encoding="utf-8")
+        self.assertIn('url="http://127.0.0.1:8000/episodes/episode.mp3"', feed_text)
+        self.assertNotIn("episode.wav", feed_text)
+
     def test_rebuild_feed_raises_when_no_audio_exists(self) -> None:
         with self.assertRaises(ValueError) as ctx:
             self.service.rebuild_feed("http://127.0.0.1:8000")
 
         self.assertIn("Generate audio before starting local RSS delivery", str(ctx.exception))
+
+    def test_rebuild_feed_uses_english_title_without_vijte_prefix(self) -> None:
+        audio_path = self.paths.audio / "vijte-7549-the-little-prince.wav"
+        audio_path.write_bytes(b"episode")
+
+        result = self.service.rebuild_feed("http://127.0.0.1:8000")
+
+        feed_text = result.feed_path.read_text(encoding="utf-8")
+        self.assertIn("<title>the little prince</title>", feed_text)
+        self.assertNotIn("<title>vijte 7549 the little prince</title>", feed_text)
+
+    def test_rebuild_feed_uses_translation_metadata_when_filename_is_only_vijte_slug(self) -> None:
+        audio_path = self.paths.audio / "vijte-7549.wav"
+        audio_path.write_bytes(b"episode")
+        self._write_translation_metadata(audio_path.stem, "The Little Prince")
+
+        result = self.service.rebuild_feed("http://127.0.0.1:8000")
+
+        feed_text = result.feed_path.read_text(encoding="utf-8")
+        self.assertIn("<title>The Little Prince</title>", feed_text)
+        self.assertNotIn("<title>vijte 7549</title>", feed_text)
+
+    def test_rebuild_feed_prefers_script_english_title_metadata_over_filename_slug(self) -> None:
+        audio_path = self.paths.audio / "vijte-7549-leftover-slug.wav"
+        audio_path.write_bytes(b"episode")
+        self._write_script_metadata(audio_path.stem, "A Real English Title")
+
+        result = self.service.rebuild_feed("http://127.0.0.1:8000")
+
+        feed_text = result.feed_path.read_text(encoding="utf-8")
+        self.assertIn("<title>A Real English Title</title>", feed_text)
+        self.assertNotIn("<title>leftover slug</title>", feed_text)
 
     def test_build_public_base_url_uses_public_host_flag(self) -> None:
         url = self.service.build_public_base_url(bind_host="0.0.0.0", port=8000, public_host="1.2.3.4")
@@ -67,6 +130,18 @@ class LocalRSSServiceTests(unittest.TestCase):
         finally:
             del os.environ["PODCAST_BASE_URL"]
         self.assertEqual(url, "http://203.0.113.5:8000")
+
+    def test_build_public_base_url_loads_env_var_from_project_dotenv(self) -> None:
+        env_file = self.paths.root / ".env"
+        env_file.write_text("PODCAST_BASE_URL=http://198.51.100.7:8000\n", encoding="utf-8")
+        original = os.environ.pop("PODCAST_BASE_URL", None)
+        try:
+            url = self.service.build_public_base_url(bind_host="0.0.0.0", port=9000)
+        finally:
+            os.environ.pop("PODCAST_BASE_URL", None)
+            if original is not None:
+                os.environ["PODCAST_BASE_URL"] = original
+        self.assertEqual(url, "http://198.51.100.7:8000")
 
     def test_build_public_base_url_env_var_strips_trailing_slash(self) -> None:
         os.environ["PODCAST_BASE_URL"] = "http://203.0.113.5:8000/"

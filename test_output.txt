@@ -1,0 +1,161 @@
+test_from_dict_creates_filter (test_article_selector.ArticleFilterTests.test_from_dict_creates_filter) ... ok
+test_from_dict_handles_missing_fields (test_article_selector.ArticleFilterTests.test_from_dict_handles_missing_fields) ... ok
+test_matches_accepts_article_with_no_filter (test_article_selector.ArticleFilterTests.test_matches_accepts_article_with_no_filter) ... ok
+test_matches_accepts_article_within_length_bounds (test_article_selector.ArticleFilterTests.test_matches_accepts_article_within_length_bounds) ... ok
+test_matches_rejects_article_above_max_length (test_article_selector.ArticleFilterTests.test_matches_rejects_article_above_max_length) ... ok
+test_matches_rejects_article_below_min_length (test_article_selector.ArticleFilterTests.test_matches_rejects_article_below_min_length) ... ok
+test_select_article_raises_when_no_match_found (test_article_selector.ArticleSelectorTests.test_select_article_raises_when_no_match_found) ... ok
+test_select_article_rejects_unknown_category (test_article_selector.ArticleSelectorTests.test_select_article_rejects_unknown_category) ... ok
+test_select_article_returns_first_matching_article (test_article_selector.ArticleSelectorTests.test_select_article_returns_first_matching_article) ... ok
+test_select_article_returns_latest_when_no_filter (test_article_selector.ArticleSelectorTests.test_select_article_returns_latest_when_no_filter) ... ok
+test_select_article_uses_category_listing_when_requested (test_article_selector.ArticleSelectorTests.test_select_article_uses_category_listing_when_requested) ... ok
+test_parse_extracts_article_links (test_article_selector.KnigovishteListingParserTests.test_parse_extracts_article_links) ... ok
+test_parse_ignores_non_article_links (test_article_selector.KnigovishteListingParserTests.test_parse_ignores_non_article_links) ... ok
+test_build_script_command_writes_script_output (test_cli.CliCommandTests.test_build_script_command_writes_script_output) ... ok
+test_daily_check_command_generates_new_episode (test_cli.CliCommandTests.test_daily_check_command_generates_new_episode)
+Test daily-check command when a new article is found. ... ok
+test_daily_check_command_passes_voice_overrides (test_cli.CliCommandTests.test_daily_check_command_passes_voice_overrides)
+Test daily-check command with voice overrides. ... ok
+test_fetch_command_reports_failure_and_returns_one (test_cli.CliCommandTests.test_fetch_command_reports_failure_and_returns_one) ... ok
+test_fetch_command_reuses_cached_html_and_reports_cache (test_cli.CliCommandTests.test_fetch_command_reuses_cached_html_and_reports_cache) ... ok
+test_generate_audio_command_passes_voice_overrides_to_audio_factory (test_cli.CliCommandTests.test_generate_audio_command_passes_voice_overrides_to_audio_factory) ... FAIL
+test_generate_audio_command_skips_duplicate_article (test_cli.CliCommandTests.test_generate_audio_command_skips_duplicate_article) ... ok
+test_generate_audio_command_writes_script_and_audio_output (test_cli.CliCommandTests.test_generate_audio_command_writes_script_and_audio_output) ... ok
+test_local_rss_delivery_command_rebuilds_feed_without_serving (test_cli.CliCommandTests.test_local_rss_delivery_command_rebuilds_feed_without_serving) ... ok
+test_local_rss_delivery_command_serves_feed_until_stopped (test_cli.CliCommandTests.test_local_rss_delivery_command_serves_feed_until_stopped) ... ok
+test_plan_command_reports_expected_paths (test_cli.CliCommandTests.test_plan_command_reports_expected_paths) ... ok
+test_run_command_reports_failure_and_returns_one (test_cli.CliCommandTests.test_run_command_reports_failure_and_returns_one) ... ok
+test_translate_command_writes_translation_artifact (test_cli.CliCommandTests.test_translate_command_writes_translation_artifact) ... ok
+test_web_command_starts_local_ui (test_cli.CliCommandTests.test_web_command_starts_local_ui) ... ok
+test_from_env_adds_default_fallback_for_custom_base_url (test_config.TranslationConfigFromEnvTests.test_from_env_adds_default_fallback_for_custom_base_url) ... ok
+test_hash_treats_same_content_as_duplicate_even_when_url_changes (test_dedup.ArticleAudioManifestTests.test_hash_treats_same_content_as_duplicate_even_when_url_changes) ... ok
+test_record_and_find_existing_audio (test_dedup.ArticleAudioManifestTests.test_record_and_find_existing_audio) ... ok
+test_fetch_calls_fetch_html_and_parse_html (test_fetcher.FetchIntegrationTests.test_fetch_calls_fetch_html_and_parse_html) ... ok
+test_fetch_propagates_parse_errors (test_fetcher.FetchIntegrationTests.test_fetch_propagates_parse_errors) ... ok
+test_parse_html_extracts_title_canonical_url_and_sentences (test_fetcher.KnigovishteArticleFetcherTests.test_parse_html_extracts_title_canonical_url_and_sentences) ... ok
+test_parse_html_rejects_pages_without_article_content (test_fetcher.KnigovishteArticleFetcherTests.test_parse_html_rejects_pages_without_article_content) ... ok
+test_normalize_empty_string_raises_error (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_empty_string_raises_error) ... ok
+test_normalize_full_url_with_www (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_full_url_with_www) ... ok
+test_normalize_full_url_without_www (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_full_url_without_www) ... ok
+test_normalize_host_only_without_scheme_raises_error (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_host_only_without_scheme_raises_error) ... ok
+test_normalize_non_knigovishte_domain_raises_error (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_non_knigovishte_domain_raises_error) ... ok
+test_normalize_relative_path_becomes_absolute (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_relative_path_becomes_absolute) ... ok
+test_normalize_root_path_only_raises_error (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_root_path_only_raises_error) ... ok
+test_normalize_strips_whitespace (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_strips_whitespace) ... ok
+test_normalize_whitespace_only_raises_error (test_fetcher.NormalizeKnigovishteUrlTests.test_normalize_whitespace_only_raises_error) ... ok
+test_parse_html_rejects_missing_article_content_div (test_fetcher.ParserFallbackTests.test_parse_html_rejects_missing_article_content_div) ... ok
+test_parse_html_rejects_missing_both_titles (test_fetcher.ParserFallbackTests.test_parse_html_rejects_missing_both_titles) ... ok
+test_parse_html_uses_page_title_when_article_title_missing (test_fetcher.ParserFallbackTests.test_parse_html_uses_page_title_when_article_title_missing) ... ok
+test_parse_html_uses_requested_url_when_canonical_missing (test_fetcher.ParserFallbackTests.test_parse_html_uses_requested_url_when_canonical_missing) ... ok
+test_run_raises_duplicate_article_error_when_audio_already_exists (test_pipeline.ArticleToPodcastPipelineTests.test_run_raises_duplicate_article_error_when_audio_already_exists) ... ok
+test_run_reuses_cached_html_on_repeat_runs (test_pipeline.ArticleToPodcastPipelineTests.test_run_reuses_cached_html_on_repeat_runs) ... ok
+test_run_supports_fetch_only_fetchers_without_html_artifact (test_pipeline.ArticleToPodcastPipelineTests.test_run_supports_fetch_only_fetchers_without_html_artifact) ... ok
+test_run_wires_services_and_persists_artifacts (test_pipeline.ArticleToPodcastPipelineTests.test_run_wires_services_and_persists_artifacts) ... ok
+test_run_command_reports_existing_audio_for_duplicate_article (test_pipeline.CliRunCommandTests.test_run_command_reports_existing_audio_for_duplicate_article) ... ok
+test_run_command_uses_pipeline_and_reports_artifacts (test_pipeline.CliRunCommandTests.test_run_command_uses_pipeline_and_reports_artifacts) ... ok
+test_pipeline_factory_uses_explicit_config_and_default_services (test_pipeline.PipelineFactoryTests.test_pipeline_factory_uses_explicit_config_and_default_services) ... ok
+test_build_public_base_url_env_var_strips_trailing_slash (test_rss.LocalRSSServiceTests.test_build_public_base_url_env_var_strips_trailing_slash) ... ok
+test_build_public_base_url_falls_back_to_hostname (test_rss.LocalRSSServiceTests.test_build_public_base_url_falls_back_to_hostname) ... ok
+test_build_public_base_url_loads_env_var_from_project_dotenv (test_rss.LocalRSSServiceTests.test_build_public_base_url_loads_env_var_from_project_dotenv) ... ok
+test_build_public_base_url_public_host_overrides_env_var (test_rss.LocalRSSServiceTests.test_build_public_base_url_public_host_overrides_env_var) ... ok
+test_build_public_base_url_uses_env_var (test_rss.LocalRSSServiceTests.test_build_public_base_url_uses_env_var) ... ok
+test_build_public_base_url_uses_public_host_flag (test_rss.LocalRSSServiceTests.test_build_public_base_url_uses_public_host_flag) ... ok
+test_create_server_serves_feed_and_episode (test_rss.LocalRSSServiceTests.test_create_server_serves_feed_and_episode) ... 127.0.0.1 - - [26/Apr/2026 15:55:31] "GET /podcast.xml HTTP/1.1" 200 -
+127.0.0.1 - - [26/Apr/2026 15:55:31] "GET /episodes/episode.wav HTTP/1.1" 200 -
+ok
+test_rebuild_feed_prefers_mp3_when_same_episode_has_multiple_formats (test_rss.LocalRSSServiceTests.test_rebuild_feed_prefers_mp3_when_same_episode_has_multiple_formats) ... ok
+test_rebuild_feed_prefers_script_english_title_metadata_over_filename_slug (test_rss.LocalRSSServiceTests.test_rebuild_feed_prefers_script_english_title_metadata_over_filename_slug) ... ok
+test_rebuild_feed_raises_when_no_audio_exists (test_rss.LocalRSSServiceTests.test_rebuild_feed_raises_when_no_audio_exists) ... ok
+test_rebuild_feed_stages_supported_audio_and_cleans_stale_files (test_rss.LocalRSSServiceTests.test_rebuild_feed_stages_supported_audio_and_cleans_stale_files) ... ok
+test_rebuild_feed_uses_english_title_without_vijte_prefix (test_rss.LocalRSSServiceTests.test_rebuild_feed_uses_english_title_without_vijte_prefix) ... ok
+test_rebuild_feed_uses_translation_metadata_when_filename_is_only_vijte_slug (test_rss.LocalRSSServiceTests.test_rebuild_feed_uses_translation_metadata_when_filename_is_only_vijte_slug) ... ok
+test_check_and_generate_duplicate_article_error (test_scheduler.TestDailyEpisodeScheduler.test_check_and_generate_duplicate_article_error)
+Duplicate article content should be handled gracefully. ... ok
+test_check_and_generate_fetch_error (test_scheduler.TestDailyEpisodeScheduler.test_check_and_generate_fetch_error)
+Network errors should be reported gracefully. ... ok
+test_check_and_generate_fetch_error_updates_state (test_scheduler.TestDailyEpisodeScheduler.test_check_and_generate_fetch_error_updates_state)
+Fetch error should still update state to avoid same-day retry spam. ... ok
+test_check_and_generate_first_run_success (test_scheduler.TestDailyEpisodeScheduler.test_check_and_generate_first_run_success)
+First run with no prior state should generate an episode. ... ok
+test_check_and_generate_pipeline_error (test_scheduler.TestDailyEpisodeScheduler.test_check_and_generate_pipeline_error)
+Pipeline errors should be caught and daemon should survive. ... ok
+test_check_and_generate_pipeline_error_updates_state (test_scheduler.TestDailyEpisodeScheduler.test_check_and_generate_pipeline_error_updates_state)
+Pipeline error should update state to avoid same-day retry spam. ... ok
+test_check_and_generate_same_article_skips (test_scheduler.TestDailyEpisodeScheduler.test_check_and_generate_same_article_skips)
+Running again with the same article should skip generation. ... ok
+test_load_and_save_state_roundtrip (test_scheduler.TestDailyEpisodeScheduler.test_load_and_save_state_roundtrip)
+State should persist correctly. ... ok
+test_load_state_corrupted_file (test_scheduler.TestDailyEpisodeScheduler.test_load_state_corrupted_file)
+Should return None if state file is corrupted. ... ok
+test_load_state_missing_file (test_scheduler.TestDailyEpisodeScheduler.test_load_state_missing_file)
+Should return None if state file doesn't exist. ... ok
+test_should_check_today_already_checked (test_scheduler.TestDailyEpisodeScheduler.test_should_check_today_already_checked)
+Should not check if already checked today. ... ok
+test_should_check_today_checked_yesterday (test_scheduler.TestDailyEpisodeScheduler.test_should_check_today_checked_yesterday)
+Should check if last check was yesterday. ... ok
+test_should_check_today_no_prior_state (test_scheduler.TestDailyEpisodeScheduler.test_should_check_today_no_prior_state)
+Should check if there's no prior state. ... ok
+test_optional_fields (test_scheduler.TestSchedulerState.test_optional_fields) ... ok
+test_to_dict_and_from_dict_roundtrip (test_scheduler.TestSchedulerState.test_to_dict_and_from_dict_roundtrip) ... ok
+test_builds_bilingual_script_with_repeated_pairs (test_script_builder.PodcastScriptBuilderTests.test_builds_bilingual_script_with_repeated_pairs) ... ok
+test_rejects_mismatched_sentence_counts (test_script_builder.PodcastScriptBuilderTests.test_rejects_mismatched_sentence_counts) ... ok
+test_translate_fails_over_to_default_base_url_after_timeout (test_translator.LangblyTranslatorTests.test_translate_fails_over_to_default_base_url_after_timeout) ... ok
+test_translate_raises_deliberate_timeout_after_all_endpoints_time_out (test_translator.LangblyTranslatorTests.test_translate_raises_deliberate_timeout_after_all_endpoints_time_out) ... ok
+test_translate_rejects_blank_translated_text (test_translator.LangblyTranslatorTests.test_translate_rejects_blank_translated_text) ... ok
+test_translate_rejects_mismatched_batch_response (test_translator.LangblyTranslatorTests.test_translate_rejects_mismatched_batch_response) ... ok
+test_translate_retries_retryable_server_errors (test_translator.LangblyTranslatorTests.test_translate_retries_retryable_server_errors) ... ok
+test_translate_returns_title_and_sentences (test_translator.LangblyTranslatorTests.test_translate_returns_title_and_sentences) ... ok
+test_translate_sends_expected_payload_and_headers (test_translator.LangblyTranslatorTests.test_translate_sends_expected_payload_and_headers) ... ok
+test_translate_wraps_http_errors (test_translator.LangblyTranslatorTests.test_translate_wraps_http_errors) ... ok
+test_translate_wraps_request_failures (test_translator.LangblyTranslatorTests.test_translate_wraps_request_failures) ... ok
+test_bilingual_generate_temp_files_are_cleaned_up (test_tts.BilingualAudioGeneratorTests.test_bilingual_generate_temp_files_are_cleaned_up) ... ok
+test_bilingual_generate_uses_bg_voice_for_bulgarian_lines (test_tts.BilingualAudioGeneratorTests.test_bilingual_generate_uses_bg_voice_for_bulgarian_lines) ... ok
+test_bilingual_google_bg_voice_uses_google_client (test_tts.BilingualAudioGeneratorTests.test_bilingual_google_bg_voice_uses_google_client) ... ok
+test_bilingual_google_english_override_keeps_google_path (test_tts.BilingualAudioGeneratorTests.test_bilingual_google_english_override_keeps_google_path) ... ok
+test_bilingual_raises_when_bg_voice_not_found (test_tts.BilingualAudioGeneratorTests.test_bilingual_raises_when_bg_voice_not_found) ... ok
+test_single_voice_google_english_override_keeps_google_path (test_tts.BilingualAudioGeneratorTests.test_single_voice_google_english_override_keeps_google_path) ... ok
+test_single_voice_google_english_uses_google_client (test_tts.BilingualAudioGeneratorTests.test_single_voice_google_english_uses_google_client) ... ok
+test_default_factory_uses_google_english_and_bulgarian_voices (test_tts.BuildDefaultAudioGeneratorTests.test_default_factory_uses_google_english_and_bulgarian_voices) ... ok
+test_concatenation_produces_combined_frames (test_tts.ConcatenateWavFilesTests.test_concatenation_produces_combined_frames) ... ok
+test_missing_input_files_are_skipped (test_tts.ConcatenateWavFilesTests.test_missing_input_files_are_skipped) ... ok
+test_no_existing_files_produces_no_output (test_tts.ConcatenateWavFilesTests.test_no_existing_files_produces_no_output) ... ok
+test_convert_wav_to_mp3_invokes_ffmpeg (test_tts.ConvertWavToMp3Tests.test_convert_wav_to_mp3_invokes_ffmpeg) ... ok
+test_convert_wav_to_mp3_surfaces_ffmpeg_errors (test_tts.ConvertWavToMp3Tests.test_convert_wav_to_mp3_surfaces_ffmpeg_errors) ... ok
+test_generate_initializes_com_for_local_tts (test_tts.PodcastAudioGeneratorTests.test_generate_initializes_com_for_local_tts) ... ok
+test_generate_raises_on_empty_episode_slug (test_tts.PodcastAudioGeneratorTests.test_generate_raises_on_empty_episode_slug) ... ok
+test_generate_raises_on_empty_script_text (test_tts.PodcastAudioGeneratorTests.test_generate_raises_on_empty_script_text) ... ok
+test_generate_raises_when_audio_file_is_not_created (test_tts.PodcastAudioGeneratorTests.test_generate_raises_when_audio_file_is_not_created) ... ok
+test_generate_raises_when_requested_voice_is_missing (test_tts.PodcastAudioGeneratorTests.test_generate_raises_when_requested_voice_is_missing) ... ok
+test_generate_raises_when_voice_name_is_blank (test_tts.PodcastAudioGeneratorTests.test_generate_raises_when_voice_name_is_blank) ... ok
+test_generate_returns_expected_path_and_invokes_engine (test_tts.PodcastAudioGeneratorTests.test_generate_returns_expected_path_and_invokes_engine) ... ok
+test_generate_sets_requested_voice_when_available (test_tts.PodcastAudioGeneratorTests.test_generate_sets_requested_voice_when_available) ... ok
+test_all_english_lines_produce_single_en_segment (test_tts.SplitScriptByLanguageTests.test_all_english_lines_produce_single_en_segment) ... ok
+test_bulgarian_line_creates_bg_segment (test_tts.SplitScriptByLanguageTests.test_bulgarian_line_creates_bg_segment) ... ok
+test_bulgarian_title_line_creates_bg_segment (test_tts.SplitScriptByLanguageTests.test_bulgarian_title_line_creates_bg_segment) ... ok
+test_consecutive_lines_same_lang_are_merged (test_tts.SplitScriptByLanguageTests.test_consecutive_lines_same_lang_are_merged) ... ok
+test_empty_script_returns_empty_list (test_tts.SplitScriptByLanguageTests.test_empty_script_returns_empty_list) ... ok
+test_context_initializes_and_uninitializes_com (test_tts.WindowsComInitializationTests.test_context_initializes_and_uninitializes_com) ... ok
+test_context_skips_uninitialize_when_com_mode_already_set (test_tts.WindowsComInitializationTests.test_context_skips_uninitialize_when_com_mode_already_set) ... ok
+test_index_renders_form_and_output_folder (test_web.WebUiTests.test_index_renders_form_and_output_folder) ... ok
+test_post_reports_existing_audio_for_duplicate_article (test_web.WebUiTests.test_post_reports_existing_audio_for_duplicate_article) ... ok
+test_post_reports_invalid_filter_range (test_web.WebUiTests.test_post_reports_invalid_filter_range) ... ok
+test_post_reports_langbly_timeout_with_deliberate_message (test_web.WebUiTests.test_post_reports_langbly_timeout_with_deliberate_message) ... ok
+test_post_runs_pipeline_for_explicit_url (test_web.WebUiTests.test_post_runs_pipeline_for_explicit_url) ... ok
+test_post_uses_filters_when_url_is_blank (test_web.WebUiTests.test_post_uses_filters_when_url_is_blank) ... ok
+test_post_uses_latest_article_when_url_is_blank (test_web.WebUiTests.test_post_uses_latest_article_when_url_is_blank) ... ok
+
+======================================================================
+FAIL: test_generate_audio_command_passes_voice_overrides_to_audio_factory (test_cli.CliCommandTests.test_generate_audio_command_passes_voice_overrides_to_audio_factory)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\first_squad_project\my-project\tests\test_cli.py", line 223, in test_generate_audio_command_passes_voice_overrides_to_audio_factory
+    self.assertEqual(exit_code, 0)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+AssertionError: 1 != 0
+
+----------------------------------------------------------------------
+Ran 128 tests in 2.316s
+
+FAILED (failures=1)
+Article URL: https://www.knigovishte.bg/vijte/42-test
+Generate Audio failed: 'charmap' codec can't encode characters in position 15-23: character maps to <undefined>

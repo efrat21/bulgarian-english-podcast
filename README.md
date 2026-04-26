@@ -5,7 +5,7 @@ Local-first Python CLI for turning a public Knigovishte article into:
 1. cached source HTML
 2. English translation text
 3. a bilingual podcast script
-4. a generated local `.wav` episode
+4. a generated local `.mp3` episode
 
 ## What is implemented
 
@@ -13,7 +13,7 @@ Local-first Python CLI for turning a public Knigovishte article into:
 - `fetch` downloads a Knigovishte article, parses the Bulgarian title/body, and caches the HTML.
 - `translate` calls Langbly and saves ordered English sentence pairs.
 - `build-script` formats the bilingual episode script.
-- `generate-audio` renders the script to a local `.wav` file, using Google Cloud TTS standard voices for English and Bulgarian by default.
+- `generate-audio` renders the script to a local `.mp3` file, using Google Cloud TTS standard voices for English and Bulgarian by default.
 - `run` executes the full fetch → translate → script → audio pipeline.
 - `web` starts a small local Flask UI for running the same pipeline in a browser.
 
@@ -52,7 +52,12 @@ Optional translation override:
 
 ```dotenv
 LANGBLY_BASE_URL=https://api.langbly.com
+LANGBLY_TIMEOUT_SECONDS=60
+LANGBLY_MAX_RETRIES=0
+LANGBLY_RETRY_BACKOFF_SECONDS=1
 ```
+
+If you point `LANGBLY_BASE_URL` at a regional host and it stalls, the translator now automatically falls back to Langbly's default API host before failing. You can add extra comma-separated failover hosts with `LANGBLY_FALLBACK_BASE_URLS=https://api.langbly.com,https://another-host.example`.
 
 Google audio defaults to English voice `en-US-Standard-F` and Bulgarian voice `bg-BG-Standard-B`. Configure credentials with the standard Google env var:
 
@@ -195,6 +200,7 @@ python main.py local-rss-delivery
 
 - The command rebuilds `data\rss\podcast.xml`, stages episode files under `data\rss\episodes\`, starts the local feed server, and prints the feed URL to use on your phone.
 - If the printed host name is not reachable from Android, set the `PODCAST_BASE_URL` environment variable to your computer's Wi-Fi IPv4 address (e.g. `PODCAST_BASE_URL=http://192.168.1.10:8000` in `.env`) before running the command, or pass `--public-host <LAN-IP>` on the CLI. Use the Wi-Fi adapter address, not `127.0.0.1`.
+- After changing `PODCAST_BASE_URL` or `--public-host`, rerun `python main.py local-rss-delivery --no-serve` (or restart `local-rss-delivery`) so `data\rss\podcast.xml` is rebuilt with the new public address.
 - Keep the command running while Podcast Addict connects.
 
 In Podcast Addict on Android:
@@ -208,7 +214,7 @@ Important local-network limits:
 
 - This feed is for a trusted LAN only. It is not a hosted or public internet feed.
 - If the computer sleeps, changes networks, or you stop the local RSS command, Podcast Addict will no longer be able to refresh or download episodes.
-- The current delivery path reuses local staged audio files directly; the first supported enclosure path serves the generated `.wav` output.
+- The current delivery path reuses local staged audio files directly; newly generated episodes are `.mp3`, and RSS staging prefers `.mp3` when the same episode stem exists in multiple formats.
 
 ## Local web UI
 
@@ -243,12 +249,12 @@ GitHub Actions now runs the same lint, type-check, test, and package-build flow 
 - `data\articles\{slug}.html` — cached source HTML
 - `data\scripts\{slug}.translation.txt` — translation artifact
 - `data\scripts\{slug}.txt` — bilingual podcast script
-- `data\audio\{slug}.wav` — generated audio
+- `data\audio\{slug}.mp3` — generated audio
 - `data\audio\manifest.json` — durable article-content hash registry used to skip duplicate audio generation
 - `data\rss\podcast.xml` — generated local RSS feed for podcast clients
-- `data\rss\episodes\{filename}` — staged audio files served by the local RSS command (`.wav` today; podcast-friendly formats such as `.mp3`, `.m4a`, and `.aac` are also supported when present)
+- `data\rss\episodes\{filename}` — staged audio files served by the local RSS command (`.mp3` preferred; `.m4a`, `.aac`, and legacy `.wav` are also supported when present)
 
-The CLI is local-first: cached article HTML is reused unless `--refresh` is passed. Once an article has produced audio, later `run` or `generate-audio` calls for the same article content reuse the manifest entry and skip creating a duplicate `.wav`.
+The CLI is local-first: cached article HTML is reused unless `--refresh` is passed. Once an article has produced audio, later `run` or `generate-audio` calls for the same article content reuse the manifest entry and skip creating a duplicate `.mp3`.
 
 ## Architecture
 
@@ -278,7 +284,7 @@ Key code paths:
 - Fetching only supports public Knigovishte article pages that still use the current `kmedia-article-title` and `kmedia-article-content` structure.
 - Sentence splitting is heuristic and may mishandle Bulgarian abbreviations or unusual punctuation.
 - Translation depends on Langbly availability, credentials, and response shape.
-- Audio generation currently targets local `.wav` output only, and the first local RSS delivery slice serves those staged `.wav` files directly over the LAN.
+- Audio generation now exports `.mp3` for better streaming compatibility after rendering an intermediate WAV internally; legacy `.wav` files remain usable for local RSS delivery.
 - English Google synthesis depends on Google Cloud credentials and network access; the default configured voice is `en-US-Standard-F`.
 - Local `pyttsx3` fallback voice availability still varies by machine and installed system voices.
 - Bulgarian synthesis depends on Google Cloud credentials and network access; the default configured voice is `bg-BG-Standard-B`.

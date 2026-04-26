@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
     "Flask>=3.0",
     "google-cloud-texttospeech>=2.31",
+    "imageio-ffmpeg>=0.6",
     "requests>=2.31",
     "python-dotenv>=1.0",
     "pyttsx3>=2.90",
@@ -45,5 +46,5 @@ files = ["main.py", "src"]
 pretty = true
 
 [[tool.mypy.overrides]]
-module = ["google.*", "pyttsx3"]
+module = ["google.*", "pyttsx3", "requests", "imageio_ffmpeg"]
 ignore_missing_imports = true
