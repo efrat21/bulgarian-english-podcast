@@ -88,7 +88,7 @@ class LocalRSSService:
 
     def _default_public_host(self, bind_host: str) -> str:
         if bind_host in {"0.0.0.0", "::", ""}:
-            return socket.gethostname()
+            return socket.gethostbyname(socket.gethostname())
         return bind_host
 
     def _discover_audio_files(self) -> list[Path]:
