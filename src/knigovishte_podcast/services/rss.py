@@ -88,7 +88,12 @@ class LocalRSSService:
 
     def _default_public_host(self, bind_host: str) -> str:
         if bind_host in {"0.0.0.0", "::", ""}:
-            return socket.gethostname()
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+                    sock.connect(("8.8.8.8", 80))
+                    return sock.getsockname()[0]
+            except OSError:
+                return socket.gethostbyname(socket.gethostname())
         return bind_host
 
     def _discover_audio_files(self) -> list[Path]:
