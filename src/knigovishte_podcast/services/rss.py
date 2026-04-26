@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from ..config import ProjectPaths
 
 SUPPORTED_AUDIO_EXTENSIONS = (".mp3", ".m4a", ".aac", ".wav")
+RSS_IMAGE_FILENAME = "pic.png"
 AUDIO_EXTENSION_PRIORITY = {
     ".mp3": 0,
     ".m4a": 1,
@@ -33,6 +34,8 @@ CONTENT_TYPES = {
 EPISODE_METADATA_SUFFIXES = (".translation.txt", ".txt")
 ENGLISH_TITLE_LABEL = "english title"
 VIJTE_PREFIX_PATTERN = re.compile(r"^vijte-\d+(?:-|$)", re.IGNORECASE)
+ITUNES_NAMESPACE = "http://www.itunes.com/dtds/podcast-1.0.dtd"
+ET.register_namespace("itunes", ITUNES_NAMESPACE)
 
 
 @dataclass(frozen=True)
@@ -155,6 +158,13 @@ class LocalRSSService:
             "description",
         ).text = "Local LAN RSS feed generated from existing podcast audio artifacts."
         ET.SubElement(channel, "language").text = "en"
+        image_url = self._channel_image_url(public_base_url)
+        if image_url:
+            image = ET.SubElement(channel, "image")
+            ET.SubElement(image, "url").text = image_url
+            ET.SubElement(image, "title").text = "Knigovishte Podcast Builder"
+            ET.SubElement(image, "link").text = f"{public_base_url}/podcast.xml"
+            ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}image", href=image_url)
 
         for staged_path in staged_episode_paths:
             item = ET.SubElement(channel, "item")
@@ -174,6 +184,12 @@ class LocalRSSService:
             )
 
         return ET.tostring(rss, encoding="utf-8", xml_declaration=True)
+
+    def _channel_image_url(self, public_base_url: str) -> str | None:
+        image_path = self.paths.rss / RSS_IMAGE_FILENAME
+        if not image_path.is_file():
+            return None
+        return f"{public_base_url}/{quote(image_path.name)}"
 
     def _episode_title_from_path(self, path: Path) -> str:
         metadata_title = self._episode_title_from_metadata(path.stem)

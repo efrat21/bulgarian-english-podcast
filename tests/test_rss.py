@@ -6,6 +6,7 @@ import sys
 import threading
 import unittest
 import urllib.request
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -45,6 +46,12 @@ class LocalRSSServiceTests(unittest.TestCase):
             encoding="utf-8",
         )
 
+    def _parse_feed_channel(self, feed_path: Path) -> ET.Element:
+        root = ET.fromstring(feed_path.read_text(encoding="utf-8"))
+        channel = root.find("channel")
+        self.assertIsNotNone(channel)
+        return channel
+
     def test_rebuild_feed_stages_supported_audio_and_cleans_stale_files(self) -> None:
         older_audio = self.paths.audio / "older.mp3"
         older_audio.write_bytes(b"older-audio")
@@ -80,6 +87,26 @@ class LocalRSSServiceTests(unittest.TestCase):
         feed_text = result.feed_path.read_text(encoding="utf-8")
         self.assertIn('url="http://127.0.0.1:8000/episodes/episode.mp3"', feed_text)
         self.assertNotIn("episode.wav", feed_text)
+
+    def test_rebuild_feed_includes_channel_image_metadata_when_pic_exists(self) -> None:
+        audio_path = self.paths.audio / "episode.mp3"
+        audio_path.write_bytes(b"episode")
+        image_path = self.paths.rss / "pic.png"
+        image_path.write_bytes(b"png-bytes")
+
+        result = self.service.rebuild_feed("http://127.0.0.1:8000")
+
+        channel = self._parse_feed_channel(result.feed_path)
+        image = channel.find("image")
+        self.assertIsNotNone(image)
+        self.assertEqual(image.findtext("url"), "http://127.0.0.1:8000/pic.png")
+        self.assertEqual(image.findtext("title"), "Knigovishte Podcast Builder")
+        self.assertEqual(image.findtext("link"), "http://127.0.0.1:8000/podcast.xml")
+        itunes_image = channel.find(
+            "{http://www.itunes.com/dtds/podcast-1.0.dtd}image"
+        )
+        self.assertIsNotNone(itunes_image)
+        self.assertEqual(itunes_image.get("href"), "http://127.0.0.1:8000/pic.png")
 
     def test_rebuild_feed_raises_when_no_audio_exists(self) -> None:
         with self.assertRaises(ValueError) as ctx:
@@ -167,6 +194,8 @@ class LocalRSSServiceTests(unittest.TestCase):
     def test_create_server_serves_feed_and_episode(self) -> None:
         audio_path = self.paths.audio / "episode.wav"
         audio_path.write_bytes(b"episode-bytes")
+        image_path = self.paths.rss / "pic.png"
+        image_path.write_bytes(b"png-bytes")
         server = self.service.create_server(host="127.0.0.1", port=0)
         port = int(server.server_address[1])
         result = self.service.rebuild_feed(f"http://127.0.0.1:{port}")
@@ -179,12 +208,26 @@ class LocalRSSServiceTests(unittest.TestCase):
             with urllib.request.urlopen(f"http://127.0.0.1:{port}/episodes/episode.wav") as response:
                 episode_body = response.read()
                 content_type = response.headers.get_content_type()
+            with urllib.request.urlopen(f"http://127.0.0.1:{port}/pic.png") as response:
+                image_body = response.read()
+                image_content_type = response.headers.get_content_type()
         finally:
             server.shutdown()
             server.server_close()
             thread.join(timeout=5)
 
-        self.assertIn("<rss", feed_body)
-        self.assertIn("episode.wav", feed_body)
+        channel = ET.fromstring(feed_body).find("channel")
+        self.assertIsNotNone(channel)
+        image = channel.find("image")
+        self.assertIsNotNone(image)
+        self.assertEqual(image.findtext("url"), f"http://127.0.0.1:{port}/pic.png")
+        itunes_image = channel.find("{http://www.itunes.com/dtds/podcast-1.0.dtd}image")
+        self.assertIsNotNone(itunes_image)
+        self.assertEqual(
+            itunes_image.get("href"),
+            f"http://127.0.0.1:{port}/pic.png",
+        )
         self.assertEqual(episode_body, b"episode-bytes")
         self.assertIn(content_type, {"audio/wav", "audio/x-wav"})
+        self.assertEqual(image_body, b"png-bytes")
+        self.assertEqual(image_content_type, "image/png")

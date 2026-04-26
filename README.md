@@ -199,6 +199,7 @@ python main.py local-rss-delivery
 ```
 
 - The command rebuilds `data\rss\podcast.xml`, stages episode files under `data\rss\episodes\`, starts the local feed server, and prints the feed URL to use on your phone.
+- If `data\rss\pic.png` exists, the feed also publishes it as the channel artwork in both standard RSS `<image>` metadata and podcast-friendly `itunes:image` metadata.
 - If the printed host name is not reachable from Android, set the `PODCAST_BASE_URL` environment variable to your computer's Wi-Fi IPv4 address (e.g. `PODCAST_BASE_URL=http://192.168.1.10:8000` in `.env`) before running the command, or pass `--public-host <LAN-IP>` on the CLI. Use the Wi-Fi adapter address, not `127.0.0.1`.
 - After changing `PODCAST_BASE_URL` or `--public-host`, rerun `python main.py local-rss-delivery --no-serve` (or restart `local-rss-delivery`) so `data\rss\podcast.xml` is rebuilt with the new public address.
 - Keep the command running while Podcast Addict connects.
@@ -252,6 +253,7 @@ GitHub Actions now runs the same lint, type-check, test, and package-build flow 
 - `data\audio\{slug}.mp3` — generated audio
 - `data\audio\manifest.json` — durable article-content hash registry used to skip duplicate audio generation
 - `data\rss\podcast.xml` — generated local RSS feed for podcast clients
+- `data\rss\pic.png` — optional channel artwork published in the RSS metadata when present
 - `data\rss\episodes\{filename}` — staged audio files served by the local RSS command (`.mp3` preferred; `.m4a`, `.aac`, and legacy `.wav` are also supported when present)
 
 The CLI is local-first: cached article HTML is reused unless `--refresh` is passed. Once an article has produced audio, later `run` or `generate-audio` calls for the same article content reuse the manifest entry and skip creating a duplicate `.mp3`.
