@@ -80,6 +80,11 @@
 - Routed to squad:ash (Language/AI Dev) for diagnosis: verify API key, investigate endpoint health, consider retry strategy or fallback provider
 - Status: Ready for Ash to investigate Langbly configuration and resilience options
 
+📌 **2026-04-28T103000Z: Issue #26 Closeout**
+- **#26 CLOSED:** RSS server disconnect resilience complete. Bishop implemented graceful error handling for client-aborted file transfers in `local-rss-delivery` command.
+- Lambert approved after live validation (forced mid-transfer disconnect, verified server kept serving subsequent requests without traceback noise).
+- Routing label (squad:bishop) left for audit trail; issue marked COMPLETED.
+
 📌 **Earlier Sessions (2026-04-17 and earlier):**
 - Issue #6 (Bulgarian voice): Fixed via PR #7; bilingual voice routing via language segmentation
 - Issue #8 (artifact dedup): Bishop completed; manifest-based SHA-256 dedup in data/audio/
