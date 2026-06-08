@@ -2,7 +2,7 @@ from flask import Flask, send_from_directory, request, abort
 from pathlib import Path
 
 app = Flask(__name__)
-DATA_ROOT = Path(__file__).resolve().parent / "data" / "rss"
+DATA_ROOT = Path(__file__).resolve().parents[2] / "data" / "rss"
 
 @app.route("/podcast.xml")
 def feed():
