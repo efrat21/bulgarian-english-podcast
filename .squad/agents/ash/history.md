@@ -16,6 +16,7 @@
 - `TranslationConfig.from_env()` in `my-project\src\knigovishte_podcast\config.py` now auto-adds Langbly's default host as a failover whenever a custom `LANGBLY_BASE_URL` is configured, with optional timeout/retry env knobs.
 - Langbly resilience for issue #24 lives in `my-project\src\knigovishte_podcast\services\translator.py`: retryable transport/5xx failures can fail over across configured hosts while response-shape validation stays strict.
 - Coverage for the timeout failover path is in `my-project\tests\test_translator.py` and `my-project\tests\test_config.py`, including regional-host timeout fallback and env-driven retry settings.
+- Verified local `my-project/.env` contains `LANGBLY_API_KEY` and live translation calls succeed against `https://eu.langbly.com` with fallback to `https://api.langbly.com`.
 
 ## Team Updates
 

@@ -1274,3 +1274,67 @@ The voice name is the most precise statement of the user's intent. Hardcoding `e
 - Issue #14 stays compatible with the existing default `en-US-Standard-F`.
 - English Google overrides such as `en-GB-Standard-A` keep using Google TTS instead of silently switching engines.
 - Tests now cover both single-voice and bilingual English override cases so the routing rule stays explicit.
+
+### 33. Issue #26 — RSS Server Client-Abort Resilience (2026-04-28)
+**Owner:** Bishop
+
+Context: The local RSS server uses Python's stdlib file-serving handler. Podcast apps sometimes open an episode URL and then cancel the transfer early, which raised `ConnectionResetError`/similar socket write errors on Windows and dumped stack traces even though the server could keep serving other clients.
+
+Decision: Treat client-aborted writes during RSS file transfer as expected network noise inside the RSS request handler. Swallow only disconnect-style socket errors (broken pipe, connection reset/aborted, timeout, including Windows-specific equivalents) and leave unrelated `OSError` failures untouched.
+
+Why: This keeps `local-rss-delivery` resilient under normal podcast-client retry/cancel behavior without hiding genuine server bugs or filesystem problems.
+
+Impact: Operators should no longer see noisy tracebacks when a phone app disconnects mid-download, and subsequent RSS/feed requests continue to work without restarting the command.
+
+**Approved by:** Lambert (2026-04-26)  
+Evidence: Dedicated RSS handler now intercepts client-abort socket write errors during `copyfile()` and still re-raises unrelated `OSError` failures. Regression tests cover the split; manual pressure test passed (client disconnect mid-transfer, follow-up request succeeded, no traceback).
+
+### 34. Issue #27 — Recruiter-Facing Showcase Guardrails (2026-04-28)
+**Owner:** Bishop (implementation), Ripley (revision), Lambert (review)
+
+Context: User clarified scope for issue #27 — not general internet safety, but a **recruiter-facing portfolio showcase** (personal demo, not production service).
+
+Threat Model (Revised):
+- Threats that matter: input injection (malicious URLs), error leakage (stack traces, API keys, paths), dependency vulnerabilities, unsafe defaults
+- Threats that don't matter: rate limiting, per-user isolation, DOS protection, audit logging
+
+Guardrails Applied:
+1. **Normalize and constrain explicit article URLs** before pipeline runs
+   - Accept only Knigovishte article hosts already supported by fetcher
+   - Upgrade `http` input to `https`
+   - Drop query strings and fragments
+   - Reject credential-bearing URLs and oversized/control-character input
+
+2. **Hide unexpected backend internals from browser output**
+   - Keep deliberate validation messages visible
+   - Convert unexpected exceptions into generic browser-safe messages and log server-side failures
+
+3. **Ship low-discovery browser defaults for recruiter page**
+   - Add `noindex, nofollow`
+   - Send security headers: `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`, CSP, restrictive permissions policy
+   - Cap request body size for showcase form
+
+4. **Document deployment hygiene instead of heavyweight features**
+   - HTTPS in front of the app
+   - Keep secrets server-side
+   - Treat route as private showcase link, not public surface
+
+**Key Revision (Ripley):** Web UI must never expose local artifact locations. Rendered page shows only sanitized status copy; no filesystem paths, direct artifact links, or `file:///` URIs in success/error states.
+
+**Approval Criteria (Lambert):**
+- Recruiter-facing requests only drive supported Knigovishte article selection
+- No stack traces, API keys, env text, filesystem paths, or `file:///` links in output
+- Safe defaults remain intact (local-first, debug=False)
+- Deployment guidance matches use case (HTTPS, secrets externalized)
+- Regression coverage proves guardrails (rejected bad URLs, invalid categories, no internal path leakage)
+
+**Final Approval:** Ripley revised; web UI now properly sanitizes output. All regression tests added and passing. No local-path or `file:///` links rendered on recruiter surface. Approved for publication.
+
+### 35. Register Awesome-Copilot Marketplace (2026-05-09T12:47:21Z)
+**Owner:** Ripley
+
+Added `awesome-copilot` (source: `github/awesome-copilot`) to the registered marketplace sources in `.squad/plugins/marketplaces.json`.
+
+Rationale: Expands available marketplace integrations to include awesome-copilot while preserving existing squad-skills registration. No duplication.
+
+Impact: Squad now has access to both squad-skills and awesome-copilot marketplaces. No breaking changes.
