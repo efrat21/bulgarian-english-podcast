@@ -90,3 +90,5 @@
 - Issue #8 (artifact dedup): Bishop completed; manifest-based SHA-256 dedup in data/audio/
 - PR cleanup verified; stale PRs (#4, #5) correctly closed
 
+
+�� Team update (2026-05-09T12:47:57Z): Awesome-copilot marketplace registered in .squad/plugins/marketplaces.json. Squad now has access to both squad-skills and awesome-copilot marketplaces. Administrative registration completed by Ripley.

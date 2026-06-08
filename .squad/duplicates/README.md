@@ -306,3 +306,22 @@ Key code paths:
 - Runtime config lives in `src\knigovishte_podcast\config.py`
 - `ProjectPaths.ensure()` creates the stable local artifact folders on demand
 - Tests currently run with `unittest`, not `pytest`
+
+## Developer setup
+
+1. Install dependencies for the app (run from the repo root):
+
+```powershell
+pip install -r my-project\requirements.txt
+```
+
+2. Run basic scripts from the `my-project\` folder. Example:
+
+```powershell
+cd my-project
+python main.py plan
+python main.py run
+```
+
+Note: `my-project` is a nested git repository — do not modify its git configuration from the outer repository.
+

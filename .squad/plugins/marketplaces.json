@@ -4,6 +4,11 @@
       "name": "squad-skills",
       "source": "tamirdresher/squad-skills",
       "added_at": "2026-04-17T16:30:00Z"
+    },
+    {
+      "name": "awesome-copilot",
+      "source": "github/awesome-copilot",
+      "added_at": "2026-05-09T12:47:21Z"
     }
   ]
 }
