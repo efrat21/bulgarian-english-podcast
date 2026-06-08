@@ -29,3 +29,4 @@ data/rss/*
 
 # Nested application repo is managed independently.
 my-project/
+.ruff_cache
